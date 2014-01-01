@@ -1,0 +1,6 @@
+*.o
+*.out
+*.mod
+.*.swp
+.*un~
+*tmp*
