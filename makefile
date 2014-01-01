@@ -7,7 +7,7 @@
 #cflags = -fast -c
 #lflags = -fast
 cpl	= gfortran
-lflags = -g -Wall -fcheck=all # -ffpe-trap=zero,invalid,overflow,underflow # -pedantic-errors
+lflags = -O3 #-g -Wall -fcheck=all # -ffpe-trap=zero,invalid,overflow,underflow # -pedantic-errors
 cflags = $(lflags) -c
 
 OBJS = configure.o my_radex.o \

@@ -2,8 +2,13 @@
 ! Inline comments should be separated from the content by at least one blank
 ! space.
 !
+! The digit point (.) is compulsory for the float types.
+!
+! Now a few input parameters accept vectorized format.  See the examples.
+! The dimension of these vectors should not be larger than 100.
+!
 ! Note that the number of collisional partners are determined by the input
-! molecular data (e.g. from LAMBDA).
+! molecular data file (e.g. from LAMBDA).
 !
 &rdxx_configure
   rdxx_cfg%dir_transition_rates = './'
@@ -23,7 +28,7 @@
   rdxx_cfg%Tcmb                 = 2.73D0 ! K
   !
   ! The following are frequently changed by the user.
-  ! They accept vector inputs.
+  ! They accept vector format inputs.
   !
   rdxx_cfg%nTkin                = 4
   rdxx_cfg%Tkin                 = 31.623D0  794.328D0  10.0 20.0 ! K
@@ -37,10 +42,10 @@
   rdxx_cfg%nn_x                 = 1
   rdxx_cfg%n_x                  = 1D0 ! Does not matter when there is no continuum opacity.
   !
-  rdxx_cfg%ndens                = 5
+  rdxx_cfg%ndens                = 5  ! Too many of them, so vary them (if needed) altogether.
   rdxx_cfg%n_H2                 = 12.620E+03 2e4 1e5 1e6 1e2 ! cm-3, total H atom density
   rdxx_cfg%n_HI                 = 0D0
-  rdxx_cfg%n_oH2                = 0D0
+  rdxx_cfg%n_oH2                = 0D0 ! If zero, calculate from n_H2 assuming 3:1.
   rdxx_cfg%n_pH2                = 0D0
   rdxx_cfg%n_Hplus              = 0D0
   rdxx_cfg%n_E                  = 0D0
