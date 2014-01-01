@@ -62,7 +62,7 @@ end type type_molecule_energy_set
 
 type :: type_statistic_equil_params
   integer nitem
-  double precision :: RTOL = 1D-3, ATOL = 1D-15
+  double precision :: RTOL = 1D-4, ATOL = 1D-20
   double precision :: t_max = 1D9, dt_first_step = 1D-6, ratio_tstep = 1.2D0
   real :: max_runtime_allowed = 5.0
   integer n_record
@@ -375,14 +375,18 @@ subroutine statistic_equil_solve
     !
     if (statistic_equil_params%ISTATE .LT. 0) then
       statistic_equil_params%NERR = statistic_equil_params%NERR + 1
-      write(*, '(A, I3/)') 'Error: ', statistic_equil_params%ISTATE
+      !write(*, '(A, I3/)') 'Error: ', statistic_equil_params%ISTATE
       statistic_equil_params%ISTATE = 3
     end if
     t_step = t_step * statistic_equil_params%ratio_tstep
     tout = t + t_step
   end do
   !
-  if (t .lt. statistic_equil_params%t_max * 0.3D0) then
+  if ((t .lt. statistic_equil_params%t_max * 0.3D0) .or. &
+      (3*statistic_equil_params%NERR .gt. statistic_equil_params%n_record)) then
+    write(*, '(/A)') 'Error occurred:'
+    write(*, '(2ES12.4, 2I6, /)') t, statistic_equil_params%t_max, &
+      statistic_equil_params%NERR, statistic_equil_params%n_record
     statistic_equil_params%is_good = .false.
   end if
   !
@@ -391,6 +395,9 @@ subroutine statistic_equil_solve
     statistic_equil_params%RWORK(1:a_mol_using%n_level))
   !
   do i=1, a_mol_using%n_level
+    if (a_mol_using%f_occupation(i) .lt. -1D4*statistic_equil_params%ATOL) then
+      statistic_equil_params%is_good = .false.
+    end if
     if (a_mol_using%f_occupation(i) .lt. 0D0) then
       a_mol_using%f_occupation(i) = 0D0
     end if

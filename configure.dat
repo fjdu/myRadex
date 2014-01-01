@@ -21,7 +21,7 @@
   !
   ! Output frequency range
   rdxx_cfg%freqmin              = 1D11 ! Hz
-  rdxx_cfg%freqmax              = 1D12 ! Hz
+  rdxx_cfg%freqmax              = 1D13 ! Hz
   !
   ! The following are not frequently changed by the user.
   rdxx_cfg%geotype              = 'spherical'
