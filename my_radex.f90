@@ -143,7 +143,7 @@ subroutine do_my_radex
         !
         Tr = (Inu_t - r%J_cont) * phy_SpeedOfLight_CGS**2 / &
           (2D0 * r%freq**2 * phy_kBoltzmann_CGS)
-        flux_K_km_s = Tr * a_mol_using%dv / 1D5 * sqrt(phy_pi/4D0/log(2D0))
+        flux_K_km_s = Tr * a_mol_using%dv / 1D5 * phy_GaussFWHM_c
         flux_CGS = (Inu_t - r%J_cont) * &
           a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
         write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7, 9ES12.3, 2F7.1, &

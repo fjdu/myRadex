@@ -455,36 +455,31 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
   character(len=*), intent(in) :: geotype
   double precision, intent(out) :: beta, dbeta_dtau
   double precision tmp, t1, t2, A
-  double precision, parameter :: const_small_tau = 1D-4
-  double precision, parameter :: const_mid_tau = 1D-1
-  double precision, parameter :: const_large_tau = 10D0
+  double precision, parameter :: const_small_tau = 1D-6
+  double precision, parameter :: const_mid_tau = 5D-1
+  double precision, parameter :: const_large_tau = 30D0
+  double precision, parameter :: LVG_c = 2.34D0 * 0.5D0
   !
   select case(geotype)
-    case ('slab', 'Slab', 'SLAB')
-      if (tau .le. const_small_tau) then
-        beta = 1D0
-        dbeta_dtau = -1.5D0
-      else
-        tmp = exp(-3D0 * tau)
-        beta = (1D0 - tmp) / (3D0 * tau)
-        dbeta_dtau = tmp * (1D0/tau + 1D0/(3D0*tau*tau)) - 1D0/(3D0*tau*tau)
-      end if
     case ('spherical', 'Spherical', 'SPHERICAL')
       if (tau .le. const_small_tau) then
+        ! Error < const_small_tau
         beta = 1D0
         dbeta_dtau = -3D0/8D0
       else if ((tau .gt. const_small_tau) .and. (tau .le. const_mid_tau)) then
+        ! Error < const_mid_tau**7/1e4
         t1 = tau
-        t2 = tau*tau
         beta = 1D0 + &
           t1 * (-3D0/8D0 + t1 * (0.1D0 + t1 * (-1D0/48D0 + t1 * ( &
-            1D0/280D0 + t1 * (-1D0/1920D0 + t1/15120D0)))))
+            1D0/280D0 + t1 * (-1D0/1920D0 + t1 * 1D0/15120D0)))))
         dbeta_dtau = -3D0/8 + &
           t1 * (1D0/5D0 + t1 * (-1D0/16D0 + t1 * (1D0/70D0 + t1 * &
-            (-1D0/384D0 + t1 * (1D0/2520D0 - t1/19200D0)))))
+            (-1D0/384D0 + t1 * (1D0/2520D0 - t1 * 1D0/19200D0)))))
         !Series[3/2/t*(1-2/t/t+2*(1/t+1/t/t)*exp(-t)), {t, 0, 0.1}]
         !Series[Diff[3/2/t*(1-2/t/t+2*(1/t+1/t/t)*exp(-t)), t], {t, 0,1}]
       else if ((tau .gt. const_mid_tau) .and. (tau .le. const_large_tau)) then
+        ! Exact formula
+        ! Error < const_mid_tau**3 * 1e-15 (not sure)
         tmp = exp(-tau)
         t1 = 1D0 / tau
         t2 = t1 * t1
@@ -495,8 +490,39 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
             1.5D0 * t1 * (4D0 * t1 * t2 - &
                           2D0 * tmp * (t1 + 2D0 * t2 + 2D0 * t1 * t2))
       else
-        beta = 1.5D0 / tau
-        dbeta_dtau = -1.5D0/(tau*tau)
+        ! Error < exp(-const_large_tau)/tau/tau
+        t1 = 1D0 / tau
+        t2 = t1 * t1
+        beta = 1.5D0 * t1 * (1D0 - 2D0 * t2)
+        dbeta_dtau = t2 * (-1.5D0 + 9D0 * t2)
+      end if
+    case ('lvg', 'LVG', 'Sobolev')
+      ! 1980A&A, 91, 68, De Jong et al.: Hydrostatic models of molecular clouds
+      ! Their formula (B-7) is modified according to radex to make it (roughly)
+      ! continuous.
+      if (tau .le. const_small_tau) then
+        beta = 1D0
+        dbeta_dtau = -LVG_c * 0.5D0
+      else if ((tau .gt. const_small_tau) .and. (tau .le. 7D0)) then
+        A = LVG_c * tau
+        tmp = exp(-A)
+        beta = (1D0 - tmp) / A
+        dbeta_dtau = LVG_c * (tmp * (1D0 + A) - 1D0) / (A*A)
+      else
+        A = log(tau * (0.5D0/sqrt(phy_Pi)))
+        t2 = sqrt(A)
+        t1 = tau * t2
+        beta = 1D0 / t1
+        dbeta_dtau = -1D0 / (tau * t1) - 0.5D0/(t1*t1*t2)
+      end if
+    case ('slab', 'Slab', 'SLAB')
+      if (tau .le. const_small_tau) then
+        beta = 1D0
+        dbeta_dtau = -1.5D0
+      else
+        tmp = exp(-3D0 * tau)
+        beta = (1D0 - tmp) / (3D0 * tau)
+        dbeta_dtau = tmp * (1D0/tau + 1D0/(3D0*tau*tau)) - 1D0/(3D0*tau*tau)
       end if
     case default
       if (tau .le. const_small_tau) then
@@ -516,7 +542,6 @@ end module statistic_equilibrium
 
 
 subroutine stat_equili_ode_f(NEQ, t, y, ydot)
-  ! sum(y) = 1
   use statistic_equilibrium
   use phy_const
   implicit none
@@ -526,7 +551,6 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
   double precision nu, J_ave, rtmp, Tkin, Cul, Clu, TL, TR, deltaE, &
     del_nu, alpha, tau, beta, dbeta_dtau
   double precision lambda, cont_alpha, cont_J
-  !double precision tmp1
   double precision jnu, knu
   double precision t1
   ydot = 0D0
@@ -536,7 +560,7 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
     ilow = a_mol_using%rad_data%list(i)%ilow
     nu = a_mol_using%rad_data%list(i)%freq
     lambda = a_mol_using%rad_data%list(i)%lambda
-    del_nu = nu * a_mol_using%dv / phy_SpeedOfLight_CGS
+    del_nu = nu * a_mol_using%dv / phy_SpeedOfLight_CGS * phy_GaussFWHM_c
     call get_cont_alpha(lambda, cont_alpha, cont_J)
     !
     t1 = phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol / del_nu
@@ -606,8 +630,6 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
       rtmp = (Cul * y(iup) - Clu * y(ilow)) * a_mol_using%colli_data%list(i)%dens_partner
       ydot(iup) = ydot(iup)   - rtmp
       ydot(ilow) = ydot(ilow) + rtmp
-      !write(*,*) iup, ilow, y(iup), y(ilow), Cul, a_mol_using%colli_data%list(i)%dens_partner
-      !if (isnan(rtmp)) stop
     end do
   end do
   !do i=1, NEQ
@@ -632,7 +654,6 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
   double precision S, dbeta_dtau, dtau_dy_up, dtau_dy_low, &
     dJ_ave_dy_up, dJ_ave_dy_low, drtmp_dy_up, drtmp_dy_low, &
     dS_dy_up, dS_dy_low
-  !double precision tmp1
   double precision jnu, knu
   double precision t1
   Tkin = a_mol_using%Tkin
@@ -641,7 +662,7 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     ilow = a_mol_using%rad_data%list(i)%ilow
     nu = a_mol_using%rad_data%list(i)%freq
     lambda = a_mol_using%rad_data%list(i)%lambda
-    del_nu = nu * a_mol_using%dv / phy_SpeedOfLight_CGS
+    del_nu = nu * a_mol_using%dv / phy_SpeedOfLight_CGS * phy_GaussFWHM_c
     call get_cont_alpha(lambda, cont_alpha, cont_J)
     !
     t1 = phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol / del_nu
@@ -649,33 +670,10 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     knu = y(ilow) * a_mol_using%rad_data%list(i)%Blu - &
           y(iup)  * a_mol_using%rad_data%list(i)%Bul
     alpha = t1 * knu + cont_alpha
-    !alpha = phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol * &
-    !        (y(ilow) * a_mol_using%rad_data%list(i)%Blu - &
-    !         y(iup)  * a_mol_using%rad_data%list(i)%Bul) / del_nu + &
-    !         cont_alpha
     tau = alpha * a_mol_using%length_scale
     !
     call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
     !
-    !if ((tau) .le. const_small_num) then
-    !  beta = 1D0
-    !  dbeta_dtau = -1.5D0
-    !else
-    !  beta = (1D0 - exp(-3D0*tau)) / (3D0 * tau)
-    !  dbeta_dtau = exp(-3D0*tau) * (1D0/tau + 1D0/3D0/tau/tau) - 1D0/3D0/tau/tau
-    !end if
-    !tmp1 = phy_hPlanck_CGS*nu / (phy_kBoltzmann_CGS*Tkin)
-    !if (tmp1 .le. const_small_num) then
-    !  S = 2D0 * phy_hPlanck_CGS * nu**3 / phy_SpeedOfLight_CGS**2 / tmp1
-    !else
-    !  S = 2D0 * phy_hPlanck_CGS * nu**3 / phy_SpeedOfLight_CGS**2 / (exp(tmp1) - 1D0)
-    !end if
-    !
-    !if ((knu .ge. 0D0) .and. (knu .le. 1D-50)) then
-    !  knu = knu + 1D-50
-    !else if ((knu .lt. 0D0) .and. (knu .ge. -1D-50)) then
-    !  knu = knu - 1D-50
-    !end if
     if ((knu .gt. 1D-30) .or. (knu .lt. -1D-30)) then
       S = jnu / knu
       dS_dy_up = (a_mol_using%rad_data%list(i)%Aul + &
@@ -695,14 +693,7 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     dtau_dy_low = a_mol_using%length_scale * &
                   phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol * &
                   (a_mol_using%rad_data%list(i)%Blu) / del_nu
-    !if (knu .eq. 0D0) then
-    !  dS_dy_up = 0D0
-    !  dS_dy_low = 0D0
-    !else
-    !  dS_dy_up = (a_mol_using%rad_data%list(i)%Aul + &
-    !              S * a_mol_using%rad_data%list(i)%Bul) / knu
-    !  dS_dy_low = -S * a_mol_using%rad_data%list(i)%Blu / knu
-    !end if
+    !
     dJ_ave_dy_up  = -S * dbeta_dtau * dtau_dy_up + dS_dy_up * (1D0 - beta)
     dJ_ave_dy_low = -S * dbeta_dtau * dtau_dy_low + dS_dy_low * (1D0 - beta)
     !
@@ -717,13 +708,6 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     PD(ilow, iup)  = PD(ilow, iup)  + drtmp_dy_up
     PD(iup,  ilow) = PD(iup,  ilow) - drtmp_dy_low
     PD(ilow, ilow) = PD(ilow, ilow) + drtmp_dy_low
-    !if (isnan(PD(iup, iup)) .or. isnan(PD(ilow, iup)) .or. &
-    !    isnan(PD(iup, ilow)) .or. isnan(PD(ilow, ilow))) then
-    !  write(*,*) PD(iup, iup), PD(ilow, iup), PD(iup, ilow), PD(ilow, ilow)
-    !  stop
-    !end if
-    !write(*,*) iup, ilow, y(iup), y(ilow), S, dbeta_dtau, tau
-    !if (isnan(drtmp_dy_up) .or. isnan(drtmp_dy_low)) stop
   end do
   do i=1, a_mol_using%colli_data%n_partner
     ! Find the T interval
