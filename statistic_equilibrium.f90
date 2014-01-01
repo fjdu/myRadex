@@ -78,6 +78,7 @@ type :: type_statistic_equil_params
         MF = 21
   double precision, dimension(:), allocatable :: RWORK
   integer, dimension(:), allocatable :: IWORK
+  logical is_good
 end type type_statistic_equil_params
 
 
@@ -97,10 +98,14 @@ contains
 
 
 subroutine reset_statistic_equil_params
+  statistic_equil_params%is_good = .true.
   statistic_equil_params%NERR = 0
   statistic_equil_params%ITASK = 1
   statistic_equil_params%ISTATE = 1
   statistic_equil_params%IOPT = 1
+  !
+  statistic_equil_params%RWORK = 0D0
+  statistic_equil_params%IWORK = 0
   statistic_equil_params%IWORK(6) = 5000
 end subroutine reset_statistic_equil_params
 
@@ -356,10 +361,13 @@ subroutine statistic_equil_solve
     !
     time_thisstep = timer%elapsed_time()
     runtime_thisstep = time_thisstep - time_laststep
-    if ((runtime_thisstep .gt. max(5.0*runtime_laststep, 0.1*statistic_equil_params%max_runtime_allowed)) &
+    if ((runtime_thisstep .gt. &
+         max(5.0*runtime_laststep, &
+             0.1*statistic_equil_params%max_runtime_allowed)) &
         .or. &
         (time_thisstep .gt. statistic_equil_params%max_runtime_allowed)) then
       write(*, '(A, ES9.2/)') 'Premature finish: t = ', t
+      statistic_equil_params%is_good = .false.
       exit
     end if
     time_laststep = time_thisstep
@@ -374,6 +382,10 @@ subroutine statistic_equil_solve
     tout = t + t_step
   end do
   !
+  if (t .lt. statistic_equil_params%t_max * 0.3D0) then
+    statistic_equil_params%is_good = .false.
+  end if
+  !
   call stat_equili_ode_f(a_mol_using%n_level, &
     t, a_mol_using%f_occupation, &
     statistic_equil_params%RWORK(1:a_mol_using%n_level))
@@ -383,7 +395,8 @@ subroutine statistic_equil_solve
       a_mol_using%f_occupation(i) = 0D0
     end if
   end do
-  a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)
+  a_mol_using%f_occupation = a_mol_using%f_occupation / &
+                             sum(a_mol_using%f_occupation)
 end subroutine statistic_equil_solve
 
 
@@ -525,8 +538,6 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
           y(iup)  * a_mol_using%rad_data%list(i)%Bul
     alpha = t1 * knu + cont_alpha
     tau = alpha * a_mol_using%length_scale
-    !write(*,*) i, alpha, tau, t1, knu, y(iup), y(ilow)
-    !if (isnan(tau)) stop
     !
     call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
     !

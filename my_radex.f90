@@ -8,98 +8,281 @@ use statistic_equilibrium
 
 implicit none
 
-type :: type_my_radex_config
+integer, parameter :: ndim_cfg_vec = 100
+
+type :: type_rdxx_cfg
   character(len=128) :: dir_transition_rates = './'
   character(len=128) :: dir_save = './'
   character(len=128) :: filename_molecule = '12C16O_H2.dat'
   character(len=128) :: filename_save = 'output.dat'
-  character(len=16)  :: geotype = ''
-  double precision Tkin, Tcmb, dv, length_scale
-  logical :: opH2eq3 = .true., provideLength = .false.
-  double precision n_H, X_H2, X_oH2, X_pH2, X_HI, X_Hplus, X_E
-  double precision X_x, Ncol_x
+  !
+  double precision freqmin, freqmax
+  !
   double precision max_evol_time
-end type type_my_radex_config
+  real max_code_run_time
+  !
+  character(len=16)  :: geotype = ''
+  double precision Tcmb
+  !
+  logical :: provideLength = .false.
+  double precision length_scale
+  !
+  double precision, dimension(ndim_cfg_vec) :: &
+    Tkin, dv, Ncol_x, n_x, &
+    n_H2, n_HI, n_oH2, n_pH2, n_Hplus, n_E, n_He   
+  integer nTkin, ndv, nn_x, nNcol_x, ndens ! Vector sizes
+  integer iTkin, idv, in_x, iNcol_x, idens ! Loop indices
+  integer fU
+end type type_rdxx_cfg
 
-type(type_molecule_energy_set), target :: molecule
+type(type_rdxx_cfg) :: rdxx_cfg
 
-type(type_my_radex_config) :: my_radex_config
-
-namelist /my_radex_configure/ &
-  my_radex_config
+namelist /rdxx_configure/ rdxx_cfg
 
 
 contains
 
 
 subroutine do_my_radex
-  integer i, fU
+  integer i, itot, ntot
+  integer iTkin, idv, in_x, iNcol_x, idens
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s
   double precision Inu_t, tau, t1, t2
+  integer flag_good
   !
-  a_mol_using => molecule
-  call my_radex_prepare_molecule
-  call statistic_equil_solve
-  !
-  call openFileSequentialWrite(fU, &
-    combine_dir_filename(my_radex_config%dir_save, &
-    my_radex_config%filename_save), 999, 1)
-  write(fU, '(2A5, A12, 2A15, 9A12, 2A7, &
-            &3A12)') &
+  call openFileSequentialWrite(rdxx_cfg%fU, &
+    combine_dir_filename(rdxx_cfg%dir_save, &
+    rdxx_cfg%filename_save), 999, 1)
+  write(rdxx_cfg%fU, '(2A5, A12, 2A15, 9A12, 2A7, &
+            &3A12, A2)') &
     '! iup', 'ilow', 'Eup', 'freq', 'lam', 'Tex', 'tau', 'Tr', &
     'fup', 'flow', 'flux_K', 'flux', 'beta', &
-    'Jnu', 'gup', 'glow', 'Aul', 'Bul', 'Blu'
-  write(fU, '(2A5, A12, 2A15, 9A12, 2A7, &
-            &3A12)') &
+    'Jnu', 'gup', 'glow', 'Aul', 'Bul', 'Blu', 'q'
+  write(rdxx_cfg%fU, '(2A5, A12, 2A15, 9A12, 2A7, &
+            &3A12, A2)') &
     '!    ', '  ', 'K', 'Hz', 'micron', 'K', '', 'K', &
     '   ', '    ', 'K km/s', 'erg/cm2/s', '    ', &
-    '...', '   ', '    ', '...', '...', '...'
-  do i=1, a_mol_using%rad_data%n_transition
-    associate(r => a_mol_using%rad_data%list(i))
-      fup  = a_mol_using%f_occupation(r%iup)
-      flow = a_mol_using%f_occupation(r%ilow)
-      gup  = a_mol_using%level_list(r%iup)%weight
-      glow = a_mol_using%level_list(r%ilow)%weight
-      Tex = -(r%Eup - r%Elow) / log(fup*glow / (flow*gup))
-      !
-      tau = r%tau
-      t1 = exp(-tau)
-      if (abs(tau) .lt. 1D-6) then
-        t2 = tau
-      else
-        t2 = 1D0 - t1
-      end if
-      Inu_t = planck_B_nu(Tex, r%freq) * t2 + t1 * r%J_cont
-      !
-      Tr = (Inu_t - r%J_cont) * phy_SpeedOfLight_CGS**2 / &
-        (2D0 * r%freq**2 * phy_kBoltzmann_CGS)
-      flux_K_km_s = Tr * a_mol_using%dv / 1D5 * sqrt(phy_pi/4D0/log(2D0))
-      flux_CGS = (Inu_t - r%J_cont) * &
-        a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
-      write(fU, '(2I5, F12.4, 2ES15.7, 9ES12.3, 2F7.1, &
-                &3ES12.3)') &
-        r%iup-1, r%ilow-1, r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
-        fup, flow, flux_K_km_s, flux_CGS, r%beta, &
-        r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu
-    end associate
+    '...', '   ', '    ', '...', '...', '...', ''
+  !
+  ! Big loop
+  !
+  itot = 0
+  ntot = rdxx_cfg%nTkin * rdxx_cfg%ndv * rdxx_cfg%nn_x * &
+         rdxx_cfg%nNcol_x * rdxx_cfg%ndens
+  !
+  do iTkin=1, rdxx_cfg%nTkin
+  do idv=1, rdxx_cfg%ndv
+  do in_x=1, rdxx_cfg%nn_x
+  do iNcol_x=1, rdxx_cfg%nNcol_x
+  do idens=1, rdxx_cfg%ndens
+    !
+    itot = itot + 1
+    !
+    rdxx_cfg%iTkin   = iTkin
+    rdxx_cfg%idv     = idv
+    rdxx_cfg%in_x    = in_x
+    rdxx_cfg%iNcol_x = iNcol_x
+    rdxx_cfg%idens   = idens
+    !
+    write(rdxx_cfg%fU, '("!", I6, "/", I6, A, 5I5, " / ", 5I5, 2X, A)') &
+      itot, ntot, ': ', &
+      rdxx_cfg%iTkin, rdxx_cfg%idv, rdxx_cfg%in_x, &
+      rdxx_cfg%iNcol_x, rdxx_cfg%idens, &
+      rdxx_cfg%nTkin, rdxx_cfg%ndv, rdxx_cfg%nn_x, &
+      rdxx_cfg%nNcol_x, rdxx_cfg%ndens, &
+      'Loop order: Tkin, dv, n_x, Ncol_x, dens'
+    write(rdxx_cfg%fU, '(3("!", ES12.4, " =", A8/), ("!", ES12.4, " =", A8))') &
+      rdxx_cfg%Tkin(rdxx_cfg%iTkin), 'Tkin', &
+      rdxx_cfg%dv(rdxx_cfg%idv), 'dv', &
+      rdxx_cfg%n_x(rdxx_cfg%in_x), 'n_x', &
+      rdxx_cfg%Ncol_x(rdxx_cfg%iNcol_x), 'Ncol_x'
+    !
+    write(*, '("!", I6, "/", I6, A, 5I5, " / ", 5I5, 2X, A)') &
+      itot, ntot, ': ', &
+      rdxx_cfg%iTkin, rdxx_cfg%idv, rdxx_cfg%in_x, &
+      rdxx_cfg%iNcol_x, rdxx_cfg%idens, &
+      rdxx_cfg%nTkin, rdxx_cfg%ndv, rdxx_cfg%nn_x, &
+      rdxx_cfg%nNcol_x, rdxx_cfg%ndens, &
+      'Loop order: Tkin, dv, n_x, Ncol_x, dens'
+    write(*, '(3("!", ES12.4, " =", A8/), ("!", ES12.4, " =", A8))') &
+      rdxx_cfg%Tkin(rdxx_cfg%iTkin), 'Tkin', &
+      rdxx_cfg%dv(rdxx_cfg%idv), 'dv', &
+      rdxx_cfg%n_x(rdxx_cfg%in_x), 'n_x', &
+      rdxx_cfg%Ncol_x(rdxx_cfg%iNcol_x), 'Ncol_x'
+    !
+    call my_radex_prepare_molecule
+    call statistic_equil_solve
+    !
+    if (statistic_equil_params%is_good) then
+      flag_good = 1
+    else
+      flag_good = 0
+    end if
+    !
+    do i=1, a_mol_using%rad_data%n_transition
+      associate(r => a_mol_using%rad_data%list(i))
+        if ((r%freq .lt. rdxx_cfg%freqmin) .or. &
+            (r%freq .gt. rdxx_cfg%freqmax)) then
+          cycle
+        end if
+        !
+        fup  = a_mol_using%f_occupation(r%iup)
+        flow = a_mol_using%f_occupation(r%ilow)
+        gup  = a_mol_using%level_list(r%iup)%weight
+        glow = a_mol_using%level_list(r%ilow)%weight
+        Tex = -(r%Eup - r%Elow) / log(fup*glow / (flow*gup))
+        !
+        tau = r%tau
+        t1 = exp(-tau)
+        if (abs(tau) .lt. 1D-6) then
+          t2 = tau
+        else
+          t2 = 1D0 - t1
+        end if
+        Inu_t = planck_B_nu(Tex, r%freq) * t2 + t1 * r%J_cont
+        !
+        Tr = (Inu_t - r%J_cont) * phy_SpeedOfLight_CGS**2 / &
+          (2D0 * r%freq**2 * phy_kBoltzmann_CGS)
+        flux_K_km_s = Tr * a_mol_using%dv / 1D5 * sqrt(phy_pi/4D0/log(2D0))
+        flux_CGS = (Inu_t - r%J_cont) * &
+          a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
+        write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7, 9ES12.3, 2F7.1, &
+                  &3ES12.3, I2)') &
+          r%iup-1, r%ilow-1, r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
+          fup, flow, flux_K_km_s, flux_CGS, r%beta, &
+          r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, flag_good
+      end associate
+    end do
   end do
-  close(fU)
+  end do
+  end do
+  end do
+  end do
+  !
+  close(rdxx_cfg%fU)
   nullify(a_mol_using)
 end subroutine do_my_radex
 
 
+subroutine my_radex_prepare_molecule
+  integer i
+  !
+  a_mol_using%geotype = rdxx_cfg%geotype ! Geometric type
+  !
+  a_mol_using%Tkin = rdxx_cfg%Tkin(rdxx_cfg%iTkin) ! K
+  a_mol_using%dv = rdxx_cfg%dv(rdxx_cfg%idv) ! cm s-1
+  !
+  ! When the continuum opacity is zero, the density of the molecule being
+  ! studied does not really enter the calculation.
+  !
+  a_mol_using%density_mol = rdxx_cfg%n_x(rdxx_cfg%in_x)
+  if (a_mol_using%density_mol .le. 1D-20) then
+    ! If not set, set it to a non-harmful value.
+    a_mol_using%density_mol = 1D0
+  end if
+  !
+  if (rdxx_cfg%provideLength) then
+    a_mol_using%length_scale = rdxx_cfg%length_scale ! cm
+  else
+    a_mol_using%length_scale = rdxx_cfg%Ncol_x(rdxx_cfg%iNcol_x) / &
+                               a_mol_using%density_mol
+  end if
+  !
+  ! Set the initial occupation
+  a_mol_using%f_occupation = a_mol_using%level_list%weight * &
+      exp(-a_mol_using%level_list%energy / a_mol_using%Tkin)
+  ! Normalize
+  a_mol_using%f_occupation = a_mol_using%f_occupation / &
+                             sum(a_mol_using%f_occupation)
+  !
+  ! Set the density of the collisional partners
+  do i=1, a_mol_using%colli_data%n_partner
+    select case (a_mol_using%colli_data%list(i)%name_partner)
+      case ('H2', 'h2')
+      !
+        a_mol_using%colli_data%list(i)%dens_partner = &
+          rdxx_cfg%n_H2(rdxx_cfg%idens)
+      !
+      case ('o-H2', 'oH2')
+      !
+        if (rdxx_cfg%n_oH2(rdxx_cfg%idens) .le. 1D-20) then
+          a_mol_using%colli_data%list(i)%dens_partner = &
+            rdxx_cfg%n_H2(rdxx_cfg%idens) * 0.75D0
+        else
+          a_mol_using%colli_data%list(i)%dens_partner = &
+            rdxx_cfg%n_oH2(rdxx_cfg%idens)
+        end if
+      !
+      case ('p-H2', 'pH2')
+      !
+        if (rdxx_cfg%n_pH2(rdxx_cfg%idens) .le. 1D-20) then
+          a_mol_using%colli_data%list(i)%dens_partner = &
+            rdxx_cfg%n_H2(rdxx_cfg%idens) * 0.25D0
+        else
+          a_mol_using%colli_data%list(i)%dens_partner = &
+            rdxx_cfg%n_pH2(rdxx_cfg%idens)
+        end if
+      !
+      case ('H', 'h')
+      !
+        a_mol_using%colli_data%list(i)%dens_partner = &
+          rdxx_cfg%n_HI(rdxx_cfg%idens)
+      !
+      case ('H+', 'h+')
+      !
+        a_mol_using%colli_data%list(i)%dens_partner = &
+          rdxx_cfg%n_Hplus(rdxx_cfg%idens)
+      !
+      case ('E', 'e', 'E-', 'e-')
+      !
+        a_mol_using%colli_data%list(i)%dens_partner = &
+          rdxx_cfg%n_E(rdxx_cfg%idens)
+      !
+      case ('He', 'HE')
+      !
+        a_mol_using%colli_data%list(i)%dens_partner = &
+          rdxx_cfg%n_He(rdxx_cfg%idens)
+      !
+      case default
+      !
+        write(*, '(/A, A)') 'Unknown collisional partner: ', &
+          a_mol_using%colli_data%list(i)%name_partner
+        a_mol_using%colli_data%list(i)%dens_partner = 0D0
+      !
+    end select
+    !
+    write(rdxx_cfg%fU, '("!", ES12.4, " = ", A8)') &
+      a_mol_using%colli_data%list(i)%dens_partner, &
+      a_mol_using%colli_data%list(i)%name_partner
+    write(*, '("!", ES12.4, " = ", A8)') &
+      a_mol_using%colli_data%list(i)%dens_partner, &
+      a_mol_using%colli_data%list(i)%name_partner
+  end do
+  !
+end subroutine my_radex_prepare_molecule
+
+
+subroutine my_radex_prepare_solver
+end subroutine my_radex_prepare_solver
+
+
 subroutine my_radex_prepare
   double precision lam_min, lam_max
+  !
+  !nullify(a_mol_using)
+  allocate(a_mol_using)
+  !
   ! Load the molecular data
-  a_mol_using => molecule
   call load_moldata_LAMBDA(&
-    combine_dir_filename(my_radex_config%dir_transition_rates, &
-    my_radex_config%filename_molecule))
+    combine_dir_filename(rdxx_cfg%dir_transition_rates, &
+    rdxx_cfg%filename_molecule))
   !
   write(*, '(A, I5)') 'Number of levels: ', a_mol_using%n_level
   !
+  statistic_equil_params%max_runtime_allowed = rdxx_cfg%max_code_run_time
+  !
   ! Evolution time for the differential equation
-  statistic_equil_params%t_max = my_radex_config%max_evol_time
+  statistic_equil_params%t_max = rdxx_cfg%max_evol_time
   !
   ! Prepare for the storage
   statistic_equil_params%NEQ = a_mol_using%n_level
@@ -123,85 +306,8 @@ subroutine my_radex_prepare
 end subroutine my_radex_prepare
 
 
-subroutine my_radex_prepare_molecule
-  integer i
-  !
-  a_mol_using%density_mol = my_radex_config%n_H * my_radex_config%X_x
-  a_mol_using%geotype = my_radex_config%geotype
-  a_mol_using%Tkin = my_radex_config%Tkin ! K
-  a_mol_using%dv = my_radex_config%dv ! cm s-1
-  if (my_radex_config%provideLength) then
-    a_mol_using%length_scale = my_radex_config%length_scale ! cm
-  else
-    a_mol_using%length_scale = my_radex_config%Ncol_x / a_mol_using%density_mol
-  end if
-  !
-  ! Set the initial occupation
-  a_mol_using%f_occupation = a_mol_using%level_list%weight * &
-      exp(-a_mol_using%level_list%energy / &
-           a_mol_using%Tkin)
-  ! Normalize
-  a_mol_using%f_occupation = a_mol_using%f_occupation / &
-                             sum(a_mol_using%f_occupation)
-  !
-  if (my_radex_config%opH2eq3) then
-    write(*, '(A)') 'oH2:pH2 = 3:1'
-    my_radex_config%X_oH2 = 0.75D0
-    my_radex_config%X_pH2 = 0.25D0
-  else
-    ! TODO
-    my_radex_config%X_oH2 = 0.75D0
-    my_radex_config%X_pH2 = 0.25D0
-  end if
-  ! Set the density of the collisional partners
-  do i=1, a_mol_using%colli_data%n_partner
-    if (a_mol_using%colli_data%list(i)%name_partner .eq. 'H2') then
-    !
-      a_mol_using%colli_data%list(i)%dens_partner = &
-        my_radex_config%n_H * my_radex_config%X_H2
-    !
-    else if ((a_mol_using%colli_data%list(i)%name_partner .eq. 'o-H2') .or. &
-             (a_mol_using%colli_data%list(i)%name_partner .eq. 'oH2')) then
-    !
-      a_mol_using%colli_data%list(i)%dens_partner = &
-        my_radex_config%n_H * my_radex_config%X_oH2
-    !
-    else if ((a_mol_using%colli_data%list(i)%name_partner .eq. 'p-H2') .or. &
-             (a_mol_using%colli_data%list(i)%name_partner .eq. 'pH2')) then
-    !
-      a_mol_using%colli_data%list(i)%dens_partner = &
-        my_radex_config%n_H * my_radex_config%X_pH2
-    !
-    else if (a_mol_using%colli_data%list(i)%name_partner .eq. 'H') then
-    !
-      a_mol_using%colli_data%list(i)%dens_partner = &
-        my_radex_config%n_H * my_radex_config%X_HI
-    !
-    else if (a_mol_using%colli_data%list(i)%name_partner .eq. 'H+') then
-    !
-      a_mol_using%colli_data%list(i)%dens_partner = &
-        my_radex_config%n_H * my_radex_config%X_Hplus
-    !
-    else if (a_mol_using%colli_data%list(i)%name_partner .eq. 'e') then
-    !
-      a_mol_using%colli_data%list(i)%dens_partner = &
-        my_radex_config%n_H * my_radex_config%X_E
-    !
-    else
-    !
-      a_mol_using%colli_data%list(i)%dens_partner = 0D0
-    !
-    end if
-    !
-    write(*, '("Partner", I2, 2X, A, ": ", ES12.4)') i, &
-      a_mol_using%colli_data%list(i)%name_partner, &
-      a_mol_using%colli_data%list(i)%dens_partner
-  end do
-  !
-end subroutine my_radex_prepare_molecule
-
-
 subroutine make_local_cont_lut(lam_min, lam_max, n)
+  ! Prepare for the continuum background (usually just cmb).
   double precision, intent(in) :: lam_min, lam_max
   integer, intent(in) :: n
   integer i
@@ -222,7 +328,7 @@ subroutine make_local_cont_lut(lam_min, lam_max, n)
     lam = cont_lut%lam(i) + dlam * 0.5D0
     ! Energy per unit area per unit frequency per second per sqradian
     freq = phy_SpeedOfLight_CGS / (lam * phy_micron2cm)
-    cont_lut%J(i) = planck_B_nu(my_radex_config%Tcmb, freq)
+    cont_lut%J(i) = planck_B_nu(rdxx_cfg%Tcmb, freq)
     !write(*,*) lam, freq
   end do
 end subroutine make_local_cont_lut
@@ -256,8 +362,6 @@ function planck_B_nu(T, nu)
   planck_B_nu = &
     2D0*phy_hPlanck_CGS * nu**3 / phy_SpeedOfLight_CGS**2 / tmp
 end function planck_B_nu
-
-
 
 
 end module my_radex

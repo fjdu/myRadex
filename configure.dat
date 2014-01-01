@@ -1,24 +1,51 @@
 ! All comments should be preceded by "!".
 ! Inline comments should be separated from the content by at least one blank
 ! space.
-&my_radex_configure
-  my_radex_config%dir_transition_rates = './'
-  my_radex_config%filename_molecule    = '12C16O_H2.dat'
-  my_radex_config%dir_save             = './'
-  my_radex_config%filename_save        = 'output.dat'
-  my_radex_config%geotype              = 'spherical'
-  my_radex_config%Tkin                 = 794.328 !31.623D0  ! K
-  my_radex_config%Tcmb                 = 2.73D0 ! K
-  my_radex_config%dv                   = 1D5  ! cm s-1
-  my_radex_config%opH2eq3              = .true.
-  my_radex_config%n_H                  = 12.620E+03 ! 8D3  ! cm-3, total H atom density
-  my_radex_config%X_H2                 = 0.5D0 ! Abundance of H2 relative to total H
-  my_radex_config%X_HI                 = 1D-5
-  my_radex_config%X_E                  = 1D-9
-  my_radex_config%X_x                  = 8D-5 ! Abundance of the molecule you are modeling
-  my_radex_config%provideLength        = .false.
-  my_radex_config%Ncol_x               = 3.905E+17 !3D15 ! cm-2
-  !my_radex_config%length_scale         = 3D16 ! cm ! Not used
-  my_radex_config%max_evol_time        = 1D8 ! Evol time in seconds
+!
+! Note that the number of collisional partners are determined by the input
+! molecular data (e.g. from LAMBDA).
+!
+&rdxx_configure
+  rdxx_cfg%dir_transition_rates = './'
+  rdxx_cfg%filename_molecule    = '12C16O_H2.dat'
+  rdxx_cfg%dir_save             = './'
+  rdxx_cfg%filename_save        = 'output.dat'
+  !
+  rdxx_cfg%max_evol_time        = 1D8 ! Evol time in seconds
+  rdxx_cfg%max_code_run_time    = 5.0 ! Max acceptable code run time (for a single param set) in seconds
+  !
+  ! Output frequency range
+  rdxx_cfg%freqmin              = 1D11 ! Hz
+  rdxx_cfg%freqmax              = 1D12 ! Hz
+  !
+  ! The following are not frequently changed by the user.
+  rdxx_cfg%geotype              = 'spherical'
+  rdxx_cfg%Tcmb                 = 2.73D0 ! K
+  !
+  ! The following are frequently changed by the user.
+  ! They accept vector inputs.
+  !
+  rdxx_cfg%nTkin                = 4
+  rdxx_cfg%Tkin                 = 31.623D0  794.328D0  10.0 20.0 ! K
+  !
+  rdxx_cfg%ndv                  = 3
+  rdxx_cfg%dv                   = 1D5 2d5 3d5  ! cm s-1
+  !
+  rdxx_cfg%nNcol_x              = 6
+  rdxx_cfg%Ncol_x               = 3.905E+17  1e17 1e16 1e15 1e14 1e13
+  !
+  rdxx_cfg%nn_x                 = 1
+  rdxx_cfg%n_x                  = 1D0 ! Does not matter when there is no continuum opacity.
+  !
+  rdxx_cfg%ndens                = 5
+  rdxx_cfg%n_H2                 = 12.620E+03 2e4 1e5 1e6 1e2 ! cm-3, total H atom density
+  rdxx_cfg%n_HI                 = 0D0
+  rdxx_cfg%n_oH2                = 0D0
+  rdxx_cfg%n_pH2                = 0D0
+  rdxx_cfg%n_Hplus              = 0D0
+  rdxx_cfg%n_E                  = 0D0
+  rdxx_cfg%n_He                 = 0D0
+  !
+  rdxx_cfg%provideLength        = .false.
 /
 !-Notes------------------------------------------------------------------

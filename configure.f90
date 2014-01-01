@@ -1,7 +1,6 @@
 module configure
 
 use trivials
-!use data_struct
 use my_radex
 
 implicit none
@@ -15,19 +14,15 @@ contains
 subroutine config_do
   use my_timer
   integer fU
-  !if (.NOT. IsWordChar(filename_config(1:1))) then
-  !  write(*,*) 'Configure file name invalid!'
-  !  stop
-  !end if
   !
   if (.NOT. getFileUnit(fU)) then
     write(*,*) 'Cannot get a file unit!'
     stop
   end if
-
-  call openFileSequentialRead(fU, filename_config, 999)
   !
-  read(fU, nml=my_radex_configure)
+  call openFileSequentialRead(fU, filename_config, 99999)
+  !
+  read(fU, nml=rdxx_configure)
   !
   close(fU, status='KEEP')
   !
@@ -40,8 +35,8 @@ subroutine config_do
   !  call my_cp_to_dir(filename_config, a_book_keeping%dir)
   !end if
   !
-  if (.NOT. dir_exist(my_radex_config%dir_save)) then
-    call my_mkdir(my_radex_config%dir_save)
+  if (.NOT. dir_exist(rdxx_cfg%dir_save)) then
+    call my_mkdir(rdxx_cfg%dir_save)
   end if
   !
   !if (.NOT. getFileUnit(a_book_keeping%fU)) then
