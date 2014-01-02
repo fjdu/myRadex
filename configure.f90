@@ -20,6 +20,16 @@ subroutine config_do
     stop
   end if
   !
+  ! First set to a nonharmful value.
+  rdxx_cfg%ndens    = 0D0
+  rdxx_cfg%n_H2     = 0D0
+  rdxx_cfg%n_HI     = 0D0
+  rdxx_cfg%n_oH2    = 0D0
+  rdxx_cfg%n_pH2    = 0D0
+  rdxx_cfg%n_Hplus  = 0D0
+  rdxx_cfg%n_E      = 0D0
+  rdxx_cfg%n_He     = 0D0
+  !
   call openFileSequentialRead(fU, filename_config, 99999)
   !
   read(fU, nml=rdxx_configure)
@@ -45,15 +55,6 @@ subroutine config_do
   !call openFileSequentialWrite(a_book_keeping%fU, &
   !  trim(combine_dir_filename(a_book_keeping%dir, a_book_keeping%filename_log)), 9999)
   !write(a_book_keeping%fU, '(A)') '! Current time: ' // trim(a_date_time%date_time_str())
-  !write(a_book_keeping%fU, '("! The content of your original configure file.")')
-  !write(a_book_keeping%fU, nml=grid_configure)
-  !write(a_book_keeping%fU, nml=chemistry_configure)
-  !write(a_book_keeping%fU, nml=disk_configure)
-  !write(a_book_keeping%fU, nml=cell_configure)
-  !write(a_book_keeping%fU, nml=iteration_configure)
-  !write(a_book_keeping%fU, nml=montecarlo_configure)
-  !write(a_book_keeping%fU, '("! End of the content of your original configure file.")')
-  !write(a_book_keeping%fU, '("! The following content are for book-keeping purposes.")')
   !flush(a_book_keeping%fU)
   !!
   !if (a_disk%backup_src) then

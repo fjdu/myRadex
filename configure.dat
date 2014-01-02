@@ -3,19 +3,22 @@
 ! space.
 !
 ! The decimal point (.) is needed for float types without an exponential part.
-! For example, if r is a float number, then r = 1.0 1.0e0 1.0d0 are OK,
-! but r = 1 is not (maybe not always).
+!   For example, if r is a float number, then r = 1.0 1.0e0 1.0d0 are OK,
+!   but r = 1 is not (maybe not always).
 !
-! A few input parameters accept vectorized format.  See the examples.
-! The dimension of these vectors should not be larger than 100.
-! You can modify the value of the constant ndim_cfg_vec in the source code if
-! you need a larger vector size.
+! A few input parameters accept vectorized format.  See examples in the
+! following.
+!   . The dimension of these vectors should not be larger than 100.
+!   . You can modify the value of the constant ndim_cfg_vec in the source code
+!     if you need a larger vector size.
+!   . The code will automatically loop over all these vectors.
+!   . Set the vector dimension to 1 to use single value mode.
 !
 ! Note that the number of collisional partners are determined by the input
 ! molecular data file (e.g. from LAMBDA).
 !
 ! For ortho/para H2, you can provide their densities if you want, or you can
-! leave *both* of them as zero, and their values will be calculated from the H2
+! set *both* of them to zero, and their values will be calculated from the H2
 ! density.
 ! In this calculation, if opH2eq3 is set to .true., then oH2:pH2 = 3:1 will be
 ! assumed, otherwise the ratio will be calculated based on Tkin.
@@ -53,6 +56,8 @@
   rdxx_cfg%n_Hplus              = 0D0
   rdxx_cfg%n_E                  = 0D0
   rdxx_cfg%n_He                 = 0D0
+  !
+  ! The remaining params do not accept vectorized inputs.
   !
   rdxx_cfg%opH2eq3              = .true.
   !

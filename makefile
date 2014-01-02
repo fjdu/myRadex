@@ -16,19 +16,12 @@ OBJS = configure.o my_radex.o \
 		statistic_equilibrium.o
 
 exe_name = a.out
-exe_alt = a1.out
 
 all: $(exe_name)
-
-alt: $(exe_alt)
 
 $(exe_name):  \
 		$(OBJS)
 	$(cpl) $(lflags) $(OBJS)
-
-$(exe_alt):  \
-		$(OBJS)
-	$(cpl) $(lflags) -o $(exe_alt) $(OBJS)
 
 main.o: main.f90 configure.o my_radex.o sub_trivials.o statistic_equilibrium.o
 	$(cpl) $(cflags) main.f90
@@ -36,9 +29,6 @@ main.o: main.f90 configure.o my_radex.o sub_trivials.o statistic_equilibrium.o
 my_radex.o: my_radex.f90 sub_global_variables.o \
 		statistic_equilibrium.o
 	$(cpl) $(cflags) my_radex.f90
-
-#data_struct.o: data_struct.f90
-#	$(cpl) $(cflags) data_struct.f90
 
 configure.o: configure.f90 my_radex.o sub_trivials.o
 	$(cpl) $(cflags) configure.f90
