@@ -22,6 +22,7 @@ use statistic_equilibrium
 
 implicit none
 
+! Max number of elements for vectorized config params
 integer, parameter :: ndim_cfg_vec = 100
 
 type :: type_rdxx_cfg
@@ -46,7 +47,7 @@ type :: type_rdxx_cfg
   double precision, dimension(ndim_cfg_vec) :: &
     Tkin, dv, Ncol_x, n_x, &
     n_H2, n_HI, n_oH2, n_pH2, n_Hplus, n_E, n_He   
-  integer nTkin, ndv, nn_x, nNcol_x, ndens ! Vector sizes
+  integer :: nTkin=1, ndv=1, nn_x=1, nNcol_x=1, ndens=1 ! Vector sizes
   integer iTkin, idv, in_x, iNcol_x, idens ! Loop indices
   double precision opH2_ratio
   logical opH2eq3
@@ -72,7 +73,8 @@ subroutine do_my_radex
   if (.not. rdxx_cfg%verbose) then
     write(*, '(A)') 'Runtime message disabled.'
   end if
-  ! Load the molecular data
+  !
+  ! Load the molecular data, etc.
   call my_radex_prepare
   !
   call openFileSequentialWrite(rdxx_cfg%fU, &
@@ -89,11 +91,11 @@ subroutine do_my_radex
     '   ', '    ', 'K km/s', 'erg/cm2/s', '    ', &
     '...', '   ', '    ', '...', '...', '...', ''
   !
-  ! Big loop
-  !
   itot = 0
   ntot = rdxx_cfg%nTkin * rdxx_cfg%ndv * rdxx_cfg%nn_x * &
          rdxx_cfg%nNcol_x * rdxx_cfg%ndens
+  !
+  ! Big loop starts here
   !
   do iTkin=1, rdxx_cfg%nTkin
   do idv=1, rdxx_cfg%ndv
@@ -180,11 +182,14 @@ subroutine do_my_radex
           r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, flag_good
       end associate
     end do
+    flush(rdxx_cfg%fU)
   end do
   end do
   end do
   end do
   end do
+  !
+  ! Big loop ends here
   !
   close(rdxx_cfg%fU)
   nullify(a_mol_using)
@@ -237,7 +242,7 @@ subroutine my_radex_prepare_molecule
         a_mol_using%colli_data%list(i)%dens_partner = &
           rdxx_cfg%n_H2(rdxx_cfg%idens)
       !
-      case ('o-H2', 'oH2')
+      case ('o-H2', 'oH2', 'o_H2')
       !
         if (rdxx_cfg%n_oH2(rdxx_cfg%idens) .le. 1D-20) then
           a_mol_using%colli_data%list(i)%dens_partner = &
@@ -248,7 +253,7 @@ subroutine my_radex_prepare_molecule
             rdxx_cfg%n_oH2(rdxx_cfg%idens)
         end if
       !
-      case ('p-H2', 'pH2')
+      case ('p-H2', 'pH2', 'p_H2')
       !
         if (rdxx_cfg%n_pH2(rdxx_cfg%idens) .le. 1D-20) then
           a_mol_using%colli_data%list(i)%dens_partner = &

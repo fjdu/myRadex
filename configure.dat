@@ -1,12 +1,15 @@
-! This is the configuration file for the code to run.
+! This is an example configuration file for the code to run.
 !
 ! All comments (optional) in this file should be preceded by "!".
 ! Inline comments should be separated from the content by at least one blank
 ! space.
 !
+! The order of the params is not important.
+!
 ! The decimal point (.) is needed for float types without an exponential part.
-!   For example, if r is a float number, then r = 1.0 1.0e0 1.0d0 are OK,
-!   but r = 1 is not (maybe not always).
+!   For example, if r is a float number, then r = 1.0 1.0e0 1.0d0 1e0 1d0 are
+!   OK, but r = 1 is not (maybe not always, depending on the Fortran
+!   implementation).
 !
 ! A few parameters accept vectorized input.  See examples below.
 !   . The dimension of these vectors should not be larger than 100.
@@ -27,11 +30,12 @@
 !
 ! Questions?  Email me at fujun.du@gmail.com
 !
+! Fujun Du
 ! 2014-01-02 Thu 03:06:38
 !
 &rdxx_configure
-  rdxx_cfg%dir_transition_rates = './'
-  rdxx_cfg%filename_molecule    = '12C16O_H2.dat'
+  rdxx_cfg%dir_transition_rates = '/Users/fdu/not_synced/work/' !'./'
+  rdxx_cfg%filename_molecule    = 'oH2CO-H2.dat' !'oh2o@rovib.dat' !'12C16O_H2.dat'
   rdxx_cfg%dir_save             = './'
   rdxx_cfg%filename_save        = 'output.dat'
   !
@@ -42,23 +46,23 @@
   ! The following accept vector format inputs.
   !
   ! Kinetic temperature
-  rdxx_cfg%nTkin                = 4
-  rdxx_cfg%Tkin                 = 31.623D0  794.328D0  10.0 20.0 ! K
+  rdxx_cfg%nTkin                = 3
+  rdxx_cfg%Tkin                 = 1e3 2e3 4e3 !31.623D0  794.328D0  10.0 20.0 ! K
   !
   ! Velocity width
-  rdxx_cfg%ndv                  = 3
-  rdxx_cfg%dv                   = 1D5 2d5 3d5  ! cm s-1
+  rdxx_cfg%ndv                  = 1
+  rdxx_cfg%dv                   = 1d5 ! cm s-1
   !
   ! Column density of the molecule you are studying
-  rdxx_cfg%nNcol_x              = 6
-  rdxx_cfg%Ncol_x               = 3.905E+17  1e17 1e16 1e15 1e14 1e13
+  rdxx_cfg%nNcol_x              = 5
+  rdxx_cfg%Ncol_x               = 1e21 1e17 1e18 1e19 1e20 ! 3.905E+17  1e17 1e16 1e15 1e14 1e13
   !
   ! Volumn density of the molecule you are studying; redundant and can be ignored
   rdxx_cfg%nn_x                 = 1
   rdxx_cfg%n_x                  = 1D0 ! Does not matter when there is no continuum opacity.
   !
   ! Density of collisional partners
-  rdxx_cfg%ndens                = 5  ! Too many of them, so vary them (if needed) altogether.
+  rdxx_cfg%ndens                = 4  ! Too many of them, so vary them (if needed) altogether.
   rdxx_cfg%n_H2                 = 12.620E+03 2e4 1e5 1e6 1e2 ! cm-3, total H atom density
   rdxx_cfg%n_HI                 = 0D0
   rdxx_cfg%n_oH2                = 0D0 ! If zero, calculate from n_H2 assuming 3:1.
@@ -74,17 +78,19 @@
   !
   ! Geometric type, can be: spherical, slab, lvg, or unspecified.
   rdxx_cfg%geotype              = 'spherical'
+  !
+  ! Background blackbody temperature.
   rdxx_cfg%Tbg                  = 2.72548D0 ! K
   !
   ! If .true., you need to provide a length scale, and the column density specified above is ignored.
   rdxx_cfg%provideLength        = .false.
   !rdxx_cfg%length_scale         = 1D18 ! cm
   !
-  rdxx_cfg%max_code_run_time    = 5.0 ! Max acceptable code run time (for a single param set) in seconds
-  rdxx_cfg%max_evol_time        = 1D8 ! Physical evol time in seconds
-  rdxx_cfg%rtol                 = 1d-4 ! Relative tolerance for the ode solver
+  rdxx_cfg%max_code_run_time    = 15.0 ! Max acceptable code run time (for a single param set) in seconds
+  rdxx_cfg%max_evol_time        = 1D7 ! Physical evol time in seconds
+  rdxx_cfg%rtol                 = 1d-3  ! Relative tolerance for the ode solver
   rdxx_cfg%atol                 = 1d-20 ! Absolute tolerance for the ode solver
-  rdxx_cfg%verbose              = .false. ! Whether to print out the running messages.
+  rdxx_cfg%verbose              = .true. ! Whether to print out the running messages.
 /
 !-Notes------------------------------------------------------------------
-! Enter your own notes here (or anywhere as comments).
+! Enter your own notes here (or anywhere else) as comments.

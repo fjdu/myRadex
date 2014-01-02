@@ -37,7 +37,6 @@ subroutine config_do
   end if
   !
   ! First set to a nonharmful value.
-  rdxx_cfg%ndens    = 0D0
   rdxx_cfg%n_H2     = 0D0
   rdxx_cfg%n_HI     = 0D0
   rdxx_cfg%n_oH2    = 0D0
