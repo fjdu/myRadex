@@ -31,7 +31,7 @@
   !
   ! Output frequency range
   rdxx_cfg%freqmin              = 1D11 ! Hz
-  rdxx_cfg%freqmax              = 1D13 ! Hz
+  rdxx_cfg%freqmax              = 1D12 ! Hz
   !
   ! The following are frequently changed by the user.
   ! They accept vector format inputs.

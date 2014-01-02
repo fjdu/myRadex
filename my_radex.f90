@@ -1,10 +1,24 @@
+! This file is part of our code to solve the statistical equilibrium problem of
+! the energy level population of a uniform volume of gas under the effect of
+! background radiation and collisional excitation.
+!
+! The code works similar to radex
+! (see https://sron.rug.nl/~vdtak/radex/index.shtml)
+!
+! One difference from radex is that we solve the statistical equilibrium
+! equation using an ode solver (ODEPACK, see netlib.org/odepack/).
+!
+! Written by Fujun Du, fujun.du@gmail.com, fdu@umich.edu
+!
+! 2014-01-02 Thu 02:43:39
+!
+
+
 module my_radex
 
 use phy_const
-!use data_struct
 use trivials
 use statistic_equilibrium
-!use chemistry
 
 implicit none
 
