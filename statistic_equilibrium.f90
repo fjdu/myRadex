@@ -454,19 +454,20 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
   double precision, intent(in) :: tau
   character(len=*), intent(in) :: geotype
   double precision, intent(out) :: beta, dbeta_dtau
-  double precision tmp, t1, t2, A
+  double precision tmp, t1, t2, A, tt
   double precision, parameter :: const_small_tau = 1D-6
   double precision, parameter :: const_mid_tau = 5D-1
   double precision, parameter :: const_large_tau = 30D0
   double precision, parameter :: LVG_c = 2.34D0 * 0.5D0
   !
+  tt = abs(tau)
   select case(geotype)
     case ('spherical', 'Spherical', 'SPHERICAL')
-      if (tau .le. const_small_tau) then
+      if (tt .le. const_small_tau) then
         ! Error < const_small_tau
         beta = 1D0
         dbeta_dtau = -3D0/8D0
-      else if ((tau .gt. const_small_tau) .and. (tau .le. const_mid_tau)) then
+      else if ((tt .gt. const_small_tau) .and. (tt .le. const_mid_tau)) then
         ! Error < const_mid_tau**7/1e4
         t1 = tau
         beta = 1D0 + &
@@ -477,7 +478,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
             (-1D0/384D0 + t1 * (1D0/2520D0 - t1 * 1D0/19200D0)))))
         !Series[3/2/t*(1-2/t/t+2*(1/t+1/t/t)*exp(-t)), {t, 0, 0.1}]
         !Series[Diff[3/2/t*(1-2/t/t+2*(1/t+1/t/t)*exp(-t)), t], {t, 0,1}]
-      else if ((tau .gt. const_mid_tau) .and. (tau .le. const_large_tau)) then
+      else if ((tt .gt. const_mid_tau) .and. (tt .le. const_large_tau)) then
         ! Exact formula
         ! Error < const_mid_tau**3 * 1e-15 (not sure)
         tmp = exp(-tau)
@@ -500,10 +501,10 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
       ! 1980A&A, 91, 68, De Jong et al.: Hydrostatic models of molecular clouds
       ! Their formula (B-7) is modified according to radex to make it (roughly)
       ! continuous.
-      if (tau .le. const_small_tau) then
+      if (tt .le. const_small_tau) then
         beta = 1D0
         dbeta_dtau = -LVG_c * 0.5D0
-      else if ((tau .gt. const_small_tau) .and. (tau .le. 7D0)) then
+      else if ((tt .gt. const_small_tau) .and. (tt .le. 7D0)) then
         A = LVG_c * tau
         tmp = exp(-A)
         beta = (1D0 - tmp) / A
@@ -516,7 +517,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
         dbeta_dtau = -1D0 / (tau * t1) - 0.5D0/(t1*t1*t2)
       end if
     case ('slab', 'Slab', 'SLAB')
-      if (tau .le. const_small_tau) then
+      if (tt .le. const_small_tau) then
         beta = 1D0
         dbeta_dtau = -1.5D0
       else
@@ -525,7 +526,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
         dbeta_dtau = tmp * (1D0/tau + 1D0/(3D0*tau*tau)) - 1D0/(3D0*tau*tau)
       end if
     case default
-      if (tau .le. const_small_tau) then
+      if (tt .le. const_small_tau) then
         beta = 1D0
         dbeta_dtau = -0.5D0
       else

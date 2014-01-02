@@ -20,12 +20,9 @@ end if
 ! Load the configure file
 call config_do
 
-call timer%init('Main')
+call timer%init('')
 
-! Load the molecular data
-call my_radex_prepare
-
-! Solve the occupation
+! Do the work
 call do_my_radex
 
 call timer%elapse
