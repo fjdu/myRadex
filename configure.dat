@@ -1,4 +1,6 @@
-! All comments should be preceded by "!".
+! This is the configuration file for the code to run.
+!
+! All comments (optional) in this file should be preceded by "!".
 ! Inline comments should be separated from the content by at least one blank
 ! space.
 !
@@ -6,12 +8,12 @@
 !   For example, if r is a float number, then r = 1.0 1.0e0 1.0d0 are OK,
 !   but r = 1 is not (maybe not always).
 !
-! A few input parameters accept vectorized format.  See examples in the
-! following.
+! A few parameters accept vectorized input.  See examples below.
 !   . The dimension of these vectors should not be larger than 100.
 !   . You can modify the value of the constant ndim_cfg_vec in the source code
 !     if you need a larger vector size.
 !   . The code will automatically loop over all these vectors.
+!     Loop order (outer -> inner): Tkin dv n_x Ncol_x n_H2
 !   . Set the vector dimension to 1 to use single value mode.
 !
 ! Note that the number of collisional partners are determined by the input
@@ -23,6 +25,10 @@
 ! In this calculation, if opH2eq3 is set to .true., then oH2:pH2 = 3:1 will be
 ! assumed, otherwise the ratio will be calculated based on Tkin.
 !
+! Questions?  Email me at fujun.du@gmail.com
+!
+! 2014-01-02 Thu 03:06:38
+!
 &rdxx_configure
   rdxx_cfg%dir_transition_rates = './'
   rdxx_cfg%filename_molecule    = '12C16O_H2.dat'
@@ -33,21 +39,25 @@
   rdxx_cfg%freqmin              = 1D11 ! Hz
   rdxx_cfg%freqmax              = 1D12 ! Hz
   !
-  ! The following are frequently changed by the user.
-  ! They accept vector format inputs.
+  ! The following accept vector format inputs.
   !
+  ! Kinetic temperature
   rdxx_cfg%nTkin                = 4
   rdxx_cfg%Tkin                 = 31.623D0  794.328D0  10.0 20.0 ! K
   !
+  ! Velocity width
   rdxx_cfg%ndv                  = 3
   rdxx_cfg%dv                   = 1D5 2d5 3d5  ! cm s-1
   !
+  ! Column density of the molecule you are studying
   rdxx_cfg%nNcol_x              = 6
   rdxx_cfg%Ncol_x               = 3.905E+17  1e17 1e16 1e15 1e14 1e13
   !
+  ! Volumn density of the molecule you are studying; redundant and can be ignored
   rdxx_cfg%nn_x                 = 1
   rdxx_cfg%n_x                  = 1D0 ! Does not matter when there is no continuum opacity.
   !
+  ! Density of collisional partners
   rdxx_cfg%ndens                = 5  ! Too many of them, so vary them (if needed) altogether.
   rdxx_cfg%n_H2                 = 12.620E+03 2e4 1e5 1e6 1e2 ! cm-3, total H atom density
   rdxx_cfg%n_HI                 = 0D0
@@ -59,13 +69,16 @@
   !
   ! The remaining params do not accept vectorized inputs.
   !
+  ! Whether to set the orthor/para ratio of H2 to 3
   rdxx_cfg%opH2eq3              = .true.
   !
-  ! The following are not frequently changed by the user.
+  ! Geometric type, can be: spherical, slab, lvg, or unspecified.
   rdxx_cfg%geotype              = 'spherical'
   rdxx_cfg%Tbg                  = 2.72548D0 ! K
   !
+  ! If .true., you need to provide a length scale, and the column density specified above is ignored.
   rdxx_cfg%provideLength        = .false.
+  !rdxx_cfg%length_scale         = 1D18 ! cm
   !
   rdxx_cfg%max_code_run_time    = 5.0 ! Max acceptable code run time (for a single param set) in seconds
   rdxx_cfg%max_evol_time        = 1D8 ! Physical evol time in seconds
@@ -74,3 +87,4 @@
   rdxx_cfg%verbose              = .false. ! Whether to print out the running messages.
 /
 !-Notes------------------------------------------------------------------
+! Enter your own notes here (or anywhere as comments).
