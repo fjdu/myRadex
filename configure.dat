@@ -32,6 +32,7 @@
 !
 ! Fujun Du
 ! 2014-01-02 Thu 03:06:38
+! 2014-01-02 Thu 22:53:00
 !
 &rdxx_configure
   rdxx_cfg%dir_transition_rates = '/Users/fdu/not_synced/work/' !'./'
@@ -80,11 +81,21 @@
   rdxx_cfg%geotype              = 'spherical'
   !
   ! Background radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
-  rdxx_cfg%nTbg                 = 2 ! Number (<=8) of background temperatures
-  rdxx_cfg%Tbg                  = 2.72548D0  3d2 ! K
+  rdxx_cfg%nTbg                 = 1 ! Number (<=8) of background temperatures; set it to zero to disable it.
+  rdxx_cfg%Tbg                  = 2.72548D0 ! K
   rdxx_cfg%provide_bgfile       = .false. ! Whether to use file input.
   rdxx_cfg%dir_bg               = './background/'
-  rdxx_cfg%filename_bg          = 'bg.dat'
+  rdxx_cfg%filename_bg          = 'bg.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
+  !
+  ! Inner continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+  ! When you include continuum absorption, you must provide a reasonable
+  ! density of the molecule you are studying or provide a length scale, so that
+  ! the continuum optical depth can be calculated.
+  rdxx_cfg%nTin                 = 0 ! Number (<=8) of background temperatures; set it to zero to disable it.
+  rdxx_cfg%Tin                  = 3d2 ! K
+  rdxx_cfg%provide_infile       = .false. ! Whether to use file input.
+  rdxx_cfg%dir_in               = './inner_field/'
+  rdxx_cfg%filename_in          = 'inner.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
   !
   ! If .true., you need to provide a length scale, and the column density specified above is ignored.
   rdxx_cfg%provideLength        = .false.

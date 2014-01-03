@@ -47,6 +47,12 @@ type :: type_rdxx_cfg
   character(len=128) :: dir_bg = ''
   character(len=128) :: filename_bg = ''
   !
+  integer nTin
+  double precision, dimension(ndim_Tbg) :: Tin
+  logical :: provide_infile = .false.
+  character(len=128) :: dir_in = ''
+  character(len=128) :: filename_in = ''
+  !
   logical :: provideLength = .false.
   double precision length_scale
   !
@@ -174,12 +180,12 @@ subroutine do_my_radex
         else
           t2 = 1D0 - t1
         end if
-        Inu_t = planck_B_nu(Tex, r%freq) * t2 + t1 * r%J_cont
+        Inu_t = planck_B_nu(Tex, r%freq) * t2 + t1 * r%J_cont_bg
         !
-        Tr = (Inu_t - r%J_cont) * phy_SpeedOfLight_CGS**2 / &
+        Tr = (Inu_t - r%J_cont_bg) * phy_SpeedOfLight_CGS**2 / &
           (2D0 * r%freq**2 * phy_kBoltzmann_CGS)
         flux_K_km_s = Tr * a_mol_using%dv / 1D5 * phy_GaussFWHM_c
-        flux_CGS = (Inu_t - r%J_cont) * &
+        flux_CGS = (Inu_t - r%J_cont_bg) * &
           a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
         write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7, 9ES12.3, 2F7.1, &
                   &3ES12.3, I2)') &
@@ -353,21 +359,36 @@ subroutine my_radex_prepare
   lam_max = maxval(a_mol_using%rad_data%list%lambda) ! micron
   lam_min = lam_min * (1D0 - 10D0 * 1D7/phy_SpeedOfLight_CGS)
   lam_max = lam_max * (1D0 + 10D0 * 1D7/phy_SpeedOfLight_CGS)
-  call make_local_cont_lut(lam_min, lam_max, n_cont_lam)
+  !
+  call make_local_cont_lut( &
+    trim(combine_dir_filename(rdxx_cfg%dir_bg, rdxx_cfg%filename_bg)), &
+    rdxx_cfg%provide_bgfile, rdxx_cfg%Tbg, rdxx_cfg%nTbg, &
+    cont_lut_bg, lam_min, lam_max, n_cont_lam)
+  !
+  call make_local_cont_lut( &
+    trim(combine_dir_filename(rdxx_cfg%dir_in, rdxx_cfg%filename_in)), &
+    rdxx_cfg%provide_infile, rdxx_cfg%Tin, rdxx_cfg%nTin, &
+    cont_lut_in, lam_min, lam_max, n_cont_lam)
   !
 end subroutine my_radex_prepare
 
 
-subroutine make_local_cont_lut(lam_min, lam_max, n)
+subroutine make_local_cont_lut(filename, usefile, Tbg, nTbg, &
+  cont_lut, lam_min, lam_max, n)
   ! Prepare for the continuum background (usually just cmb).
+  character(len=128), intent(in) :: filename
+  logical, intent(in) :: usefile
+  integer, intent(in) :: nTbg
+  double precision, dimension(nTbg), intent(in) :: Tbg
+  type(type_continuum_lut), intent(out) :: cont_lut
   double precision, intent(in) :: lam_min, lam_max
   integer, intent(in) :: n
   integer i, j
   double precision dlam, dlam0, lam_ratio, lam, freq
   integer nrow, ios, fUnit, idx
-  double precision, dimension(:), allocatable :: bglam, bgval
-  double precision frac, tmp
-  character(len=128) filename, str
+  double precision, dimension(:), allocatable :: bglam, bgval, bgalpha
+  double precision frac, tmp, tmp1
+  character(len=128) str
   character, parameter :: commentstr = '!'
   !
   if (.not. allocated(cont_lut%lam)) then
@@ -377,11 +398,9 @@ subroutine make_local_cont_lut(lam_min, lam_max, n)
              cont_lut%J(cont_lut%n))
   end if
   !
-  if (rdxx_cfg%provide_bgfile) then
-    filename = trim(combine_dir_filename(rdxx_cfg%dir_bg, &
-                                         rdxx_cfg%filename_bg))
+  if (usefile) then
     nrow = GetFileLen_comment_blank(filename, commentstr)
-    allocate(bglam(nrow), bgval(nrow))
+    allocate(bglam(nrow), bgval(nrow), bgalpha(nrow))
     bglam = 0D0
     bgval = 0D0
     call openFileSequentialRead(fUnit, filename, 99, 1)
@@ -393,7 +412,7 @@ subroutine make_local_cont_lut(lam_min, lam_max, n)
         exit
       end if
       if ((str(1:1) .ne. commentstr) .and. (str(1:1) .ne. ' ')) then
-        read(str, '(2F16.6)', IOSTAT=ios) bglam(i), bgval(i)
+        read(str, '(3F16.6)', IOSTAT=ios) bglam(i), bgval(i), bgalpha(i)
       end if
     end do
     close(fUnit)
@@ -423,25 +442,31 @@ subroutine make_local_cont_lut(lam_min, lam_max, n)
     !
     ! Energy per unit area per unit frequency per second per sqradian
     cont_lut%J(i) = 0D0
-    do j=1, rdxx_cfg%nTbg
-      cont_lut%J(i) = cont_lut%J(i) + planck_B_nu(rdxx_cfg%Tbg(j), freq)
+    do j=1, nTbg
+      cont_lut%J(i) = cont_lut%J(i) + planck_B_nu(Tbg(j), freq)
     end do
     !
-    if (rdxx_cfg%provide_bgfile) then
+    if (usefile) then
       idx = binary_search(bglam, nrow, lam, 1)
       if ((idx .ge. 1) .and. (idx .le. nrow)) then
         if (idx .lt. nrow) then
           frac = (lam - bglam(idx)) / (bglam(idx+1) - bglam(idx))
           tmp = bgval(idx) * (1D0 - frac) + bgval(idx+1) * frac
+          tmp1 = bgalpha(idx) * (1D0 - frac) + bgalpha(idx+1) * frac
         else
           frac = (lam - bglam(idx-1)) / (bglam(idx) - bglam(idx-1))
           tmp = bgval(idx) * frac + bgval(idx-1) * (1D0 - frac)
+          tmp1 = bgalpha(idx) * frac + bgalpha(idx-1) * (1D0 - frac)
         end if
         cont_lut%J(i) = cont_lut%J(i) + tmp
+        cont_lut%alpha(i) = cont_lut%alpha(i) + tmp1
       end if
     end if
     !write(*,*) i, cont_lut%lam(i), cont_lut%J(i), lam, lam_ratio, dlam, dlam0
   end do
+  if (allocated(bglam)) then
+    deallocate(bglam, bgval, bgalpha)
+  end if
 end subroutine make_local_cont_lut
 
 
