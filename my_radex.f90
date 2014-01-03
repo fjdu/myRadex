@@ -24,6 +24,7 @@ implicit none
 
 ! Max number of elements for vectorized config params
 integer, parameter :: ndim_cfg_vec = 100
+integer, parameter :: ndim_Tbg = 8
 
 type :: type_rdxx_cfg
   character(len=128) :: dir_transition_rates = './'
@@ -39,7 +40,12 @@ type :: type_rdxx_cfg
   double precision rtol, atol
   !
   character(len=16)  :: geotype = ''
-  double precision Tbg
+  !
+  integer nTbg
+  double precision, dimension(ndim_Tbg) :: Tbg
+  logical :: provide_bgfile = .false.
+  character(len=128) :: dir_bg = ''
+  character(len=128) :: filename_bg = ''
   !
   logical :: provideLength = .false.
   double precision length_scale
@@ -307,7 +313,7 @@ end subroutine my_radex_prepare_molecule
 
 subroutine my_radex_prepare
   double precision lam_min, lam_max
-  integer, parameter :: n_cont_lam = 400
+  integer, parameter :: n_cont_lam = 200
   !
   !nullify(a_mol_using)
   allocate(a_mol_using)
@@ -356,8 +362,13 @@ subroutine make_local_cont_lut(lam_min, lam_max, n)
   ! Prepare for the continuum background (usually just cmb).
   double precision, intent(in) :: lam_min, lam_max
   integer, intent(in) :: n
-  integer i
-  double precision dlam, lam, freq
+  integer i, j
+  double precision dlam, dlam0, lam_ratio, lam, freq
+  integer nrow, ios, fUnit, idx
+  double precision, dimension(:), allocatable :: bglam, bgval
+  double precision frac, tmp
+  character(len=128) filename, str
+  character, parameter :: commentstr = '!'
   !
   if (.not. allocated(cont_lut%lam)) then
     cont_lut%n = n
@@ -366,16 +377,70 @@ subroutine make_local_cont_lut(lam_min, lam_max, n)
              cont_lut%J(cont_lut%n))
   end if
   !
+  if (rdxx_cfg%provide_bgfile) then
+    filename = trim(combine_dir_filename(rdxx_cfg%dir_bg, &
+                                         rdxx_cfg%filename_bg))
+    nrow = GetFileLen_comment_blank(filename, commentstr)
+    allocate(bglam(nrow), bgval(nrow))
+    bglam = 0D0
+    bgval = 0D0
+    call openFileSequentialRead(fUnit, filename, 99, 1)
+    i = 0
+    do
+      i = i + 1
+      read(fUnit, '(A128)', IOSTAT=ios) str
+      if (ios .ne. 0) then
+        exit
+      end if
+      if ((str(1:1) .ne. commentstr) .and. (str(1:1) .ne. ' ')) then
+        read(str, '(2F16.6)', IOSTAT=ios) bglam(i), bgval(i)
+      end if
+    end do
+    close(fUnit)
+    if (i .ne. nrow) then
+      write(*, '(A)') 'Error loading background file.'
+      write(*, '(A)') 'Maybe something not correct in the file format.'
+    end if
+  end if
+  !
   dlam = (lam_max - lam_min) / dble(n-1)
+  dlam0 = dlam / (1D0 + 5D0 * dlam / lam_min)
+  lam_ratio = get_ratio_of_interval_log(lam_min, lam_max, dlam0, n)
+  !
+  dlam = dlam0
+  cont_lut%lam(1) = lam_min
+  !
   do i=1, cont_lut%n
-    cont_lut%lam(i) = lam_min + dlam * dble(i-1)
+    if (i .gt. 1) then
+      cont_lut%lam(i) = cont_lut%lam(i-1) + dlam
+      dlam = dlam * lam_ratio
+    end if
+    !
     cont_lut%alpha(i) = 0D0 ! absorption
     !
     lam = cont_lut%lam(i) + dlam * 0.5D0
-    ! Energy per unit area per unit frequency per second per sqradian
     freq = phy_SpeedOfLight_CGS / (lam * phy_micron2cm)
-    cont_lut%J(i) = planck_B_nu(rdxx_cfg%Tbg, freq)
-    !write(*,*) lam, freq
+    !
+    ! Energy per unit area per unit frequency per second per sqradian
+    cont_lut%J(i) = 0D0
+    do j=1, rdxx_cfg%nTbg
+      cont_lut%J(i) = cont_lut%J(i) + planck_B_nu(rdxx_cfg%Tbg(j), freq)
+    end do
+    !
+    if (rdxx_cfg%provide_bgfile) then
+      idx = binary_search(bglam, nrow, lam, 1)
+      if ((idx .ge. 1) .and. (idx .le. nrow)) then
+        if (idx .lt. nrow) then
+          frac = (lam - bglam(idx)) / (bglam(idx+1) - bglam(idx))
+          tmp = bgval(idx) * (1D0 - frac) + bgval(idx+1) * frac
+        else
+          frac = (lam - bglam(idx-1)) / (bglam(idx) - bglam(idx-1))
+          tmp = bgval(idx) * frac + bgval(idx-1) * (1D0 - frac)
+        end if
+        cont_lut%J(i) = cont_lut%J(i) + tmp
+      end if
+    end if
+    !write(*,*) i, cont_lut%lam(i), cont_lut%J(i), lam, lam_ratio, dlam, dlam0
   end do
 end subroutine make_local_cont_lut
 

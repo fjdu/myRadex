@@ -43,7 +43,7 @@
   rdxx_cfg%freqmin              = 1D11 ! Hz
   rdxx_cfg%freqmax              = 1D12 ! Hz
   !
-  ! The following accept vector format inputs.
+  ! The following accept vector format inputs which will be looped over automatically.
   !
   ! Kinetic temperature
   rdxx_cfg%nTkin                = 3
@@ -54,8 +54,8 @@
   rdxx_cfg%dv                   = 1d5 ! cm s-1
   !
   ! Column density of the molecule you are studying
-  rdxx_cfg%nNcol_x              = 5
-  rdxx_cfg%Ncol_x               = 1e21 1e17 1e18 1e19 1e20 ! 3.905E+17  1e17 1e16 1e15 1e14 1e13
+  rdxx_cfg%nNcol_x              = 4
+  rdxx_cfg%Ncol_x               = 1e12 1e18 1e19 1e20 ! 3.905E+17  1e17 1e16 1e15 1e14 1e13
   !
   ! Volumn density of the molecule you are studying; redundant and can be ignored
   rdxx_cfg%nn_x                 = 1
@@ -71,16 +71,20 @@
   rdxx_cfg%n_E                  = 0D0
   rdxx_cfg%n_He                 = 0D0
   !
-  ! The remaining params do not accept vectorized inputs.
+  ! The remaining params are not looped over.
   !
   ! Whether to set the orthor/para ratio of H2 to 3
-  rdxx_cfg%opH2eq3              = .true.
+  rdxx_cfg%opH2eq3              = .false.
   !
   ! Geometric type, can be: spherical, slab, lvg, or unspecified.
   rdxx_cfg%geotype              = 'spherical'
   !
-  ! Background blackbody temperature.
-  rdxx_cfg%Tbg                  = 2.72548D0 ! K
+  ! Background radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+  rdxx_cfg%nTbg                 = 2 ! Number (<=8) of background temperatures
+  rdxx_cfg%Tbg                  = 2.72548D0  3d2 ! K
+  rdxx_cfg%provide_bgfile       = .false. ! Whether to use file input.
+  rdxx_cfg%dir_bg               = './background/'
+  rdxx_cfg%filename_bg          = 'bg.dat'
   !
   ! If .true., you need to provide a length scale, and the column density specified above is ignored.
   rdxx_cfg%provideLength        = .false.
