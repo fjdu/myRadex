@@ -108,7 +108,7 @@ type(type_molecule_energy_set), pointer :: a_mol_using
 
 type(type_statistic_equil_params) statistic_equil_params
 
-type(type_continuum_lut) cont_lut_bg, cont_lut_in
+type(type_continuum_lut) cont_lut_bg, cont_lut_in, cont_lut_out
 
 
 contains
@@ -569,7 +569,7 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
   integer i, j, itmp, iup, ilow, iL, iR
   double precision nu, J_ave, rtmp, Tkin, Cul, Clu, TL, TR, deltaE, &
     del_nu, alpha, tau, beta, dbeta_dtau
-  double precision lambda, cont_alpha, cont_J_bg, cont_J_in, tmp
+  double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
   double precision jnu, knu
   double precision t1
   ydot = 0D0
@@ -582,6 +582,7 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
     del_nu = nu * a_mol_using%dv / phy_SpeedOfLight_CGS * phy_GaussFWHM_c
     call get_cont_alpha(cont_lut_bg, lambda, tmp, cont_J_bg)
     call get_cont_alpha(cont_lut_in, lambda, cont_alpha, cont_J_in)
+    call get_cont_alpha(cont_lut_out, lambda, tmp, cont_J_out)
     !
     t1 = phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol / del_nu
     jnu = y(iup) *  a_mol_using%rad_data%list(i)%Aul
@@ -598,7 +599,7 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
       J_ave = jnu * a_mol_using%length_scale * t1
     end if
     !
-    J_ave = J_ave * (1D0 - beta) + cont_J_bg * beta + cont_J_in
+    J_ave = J_ave * (1D0 - beta) + (cont_J_bg + cont_J_out) * beta + cont_J_in
     !
     a_mol_using%rad_data%list(i)%tau = tau
     a_mol_using%rad_data%list(i)%beta = beta
@@ -670,7 +671,7 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
   integer i, j, itmp, iup, ilow, iL, iR
   double precision nu, J_ave, &
         Tkin, Cul, Clu, TL, TR, deltaE, del_nu, alpha, tau, beta
-  double precision lambda, cont_alpha, cont_J_bg, cont_J_in, tmp
+  double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
   double precision S, dbeta_dtau, dtau_dy_up, dtau_dy_low, &
     dJ_ave_dy_up, dJ_ave_dy_low, drtmp_dy_up, drtmp_dy_low, &
     dS_dy_up, dS_dy_low
@@ -685,6 +686,7 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     del_nu = nu * a_mol_using%dv / phy_SpeedOfLight_CGS * phy_GaussFWHM_c
     call get_cont_alpha(cont_lut_bg, lambda, tmp, cont_J_bg)
     call get_cont_alpha(cont_lut_in, lambda, cont_alpha, cont_J_in)
+    call get_cont_alpha(cont_lut_out, lambda, tmp, cont_J_out)
     !
     t1 = phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol / del_nu
     jnu = y(iup) *  a_mol_using%rad_data%list(i)%Aul
@@ -706,7 +708,7 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
       dS_dy_low = 0D0
     end if
     !
-    J_ave = S * (1D0 - beta) + cont_J_bg * beta + cont_J_in
+    J_ave = S * (1D0 - beta) + (cont_J_bg + cont_J_out) * beta + cont_J_in
     !
     dtau_dy_up = a_mol_using%length_scale * &
                  phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol * &

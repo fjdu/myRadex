@@ -82,20 +82,30 @@
   !
   ! Background radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
   rdxx_cfg%nTbg                 = 1 ! Number (<=8) of background temperatures; set it to zero to disable it.
-  rdxx_cfg%Tbg                  = 2.72548D0 ! K
+  rdxx_cfg%Tbg                  = 2.72548D0 ! K; can be vector
+  rdxx_cfg%Tbgscaling           = 1D0 ! Scaling factors; can be vector, must be of the same dimension as Tbg
   rdxx_cfg%provide_bgfile       = .false. ! Whether to use file input.
   rdxx_cfg%dir_bg               = './background/'
   rdxx_cfg%filename_bg          = 'bg.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
   !
-  ! Inner diffuse continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+  ! Internal diffuse continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
   ! When you include continuum absorption, you must provide a reasonable
   ! density of the molecule you are studying or provide a length scale, so that
   ! the continuum optical depth can be calculated.
   rdxx_cfg%nTin                 = 1 ! Number (<=8) of background temperatures; set it to zero to disable it.
-  rdxx_cfg%Tin                  = 3d2 ! K
+  rdxx_cfg%Tin                  = 3d2 ! K; can be vector
+  rdxx_cfg%Tinscaling           = 1D0 ! Scaling factors; can be vector, must be of the same dimension as Tin
   rdxx_cfg%provide_infile       = .false. ! Whether to use file input.
-  rdxx_cfg%dir_in               = './inner_field/'
-  rdxx_cfg%filename_in          = 'inner.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
+  rdxx_cfg%dir_in               = './internal_field/'
+  rdxx_cfg%filename_in          = 'internal.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
+  !
+  ! External continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+  rdxx_cfg%nTout                = 1 ! Number (<=8) of background temperatures; set it to zero to disable it.
+  rdxx_cfg%Tout                 = 5D3 ! K; can be vector
+  rdxx_cfg%Toutscaling          = 1D-5 ! Scaling factors; can be vector, must be of the same dimension as Tout
+  rdxx_cfg%provide_outfile      = .false. ! Whether to use file input.
+  rdxx_cfg%dir_out              = './internal_field/'
+  rdxx_cfg%filename_out         = 'internal.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
   !
   ! If .true., you need to provide a length scale, and the column density specified above is ignored.
   rdxx_cfg%provideLength        = .false.

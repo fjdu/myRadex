@@ -36,23 +36,32 @@ type :: type_rdxx_cfg
   !
   double precision freqmin, freqmax
   !
-  double precision max_evol_time
-  real max_code_run_time
-  double precision rtol, atol
+  double precision :: max_evol_time = 1D8
+  real :: max_code_run_time = 5.0
+  double precision :: rtol = 1D-4, atol = 1D-20
   !
   character(len=16)  :: geotype = ''
   !
-  integer nTbg
-  double precision, dimension(ndim_Tbg) :: Tbg
+  integer :: nTbg = 0
+  double precision, dimension(ndim_Tbg) :: Tbg = 0D0
+  double precision, dimension(ndim_Tbg) :: Tbgscaling = 1D0
   logical :: provide_bgfile = .false.
   character(len=128) :: dir_bg = ''
   character(len=128) :: filename_bg = ''
   !
-  integer nTin
-  double precision, dimension(ndim_Tbg) :: Tin
+  integer :: nTin = 0
+  double precision, dimension(ndim_Tbg) :: Tin = 0D0
+  double precision, dimension(ndim_Tbg) :: Tinscaling = 1D0
   logical :: provide_infile = .false.
   character(len=128) :: dir_in = ''
   character(len=128) :: filename_in = ''
+  !
+  integer :: nTout = 0
+  double precision, dimension(ndim_Tbg) :: Tout = 0D0
+  double precision, dimension(ndim_Tbg) :: Toutscaling = 1D0
+  logical :: provide_outfile = .false.
+  character(len=128) :: dir_out = ''
+  character(len=128) :: filename_out = ''
   !
   logical :: provideLength = .false.
   double precision length_scale
@@ -363,24 +372,33 @@ subroutine my_radex_prepare
   !
   call make_local_cont_lut( &
     trim(combine_dir_filename(rdxx_cfg%dir_bg, rdxx_cfg%filename_bg)), &
-    rdxx_cfg%provide_bgfile, rdxx_cfg%Tbg, rdxx_cfg%nTbg, &
+    rdxx_cfg%provide_bgfile, &
+    rdxx_cfg%Tbg, rdxx_cfg%nTbg, rdxx_cfg%Tbgscaling, &
     cont_lut_bg, lam_min, lam_max, n_cont_lam)
+  cont_lut_bg%alpha = 0D0
   !
   call make_local_cont_lut( &
     trim(combine_dir_filename(rdxx_cfg%dir_in, rdxx_cfg%filename_in)), &
-    rdxx_cfg%provide_infile, rdxx_cfg%Tin, rdxx_cfg%nTin, &
+    rdxx_cfg%provide_infile, &
+    rdxx_cfg%Tin, rdxx_cfg%nTin, rdxx_cfg%Tinscaling, &
     cont_lut_in, lam_min, lam_max, n_cont_lam)
+  !
+  call make_local_cont_lut( &
+    trim(combine_dir_filename(rdxx_cfg%dir_out, rdxx_cfg%filename_out)), &
+    rdxx_cfg%provide_outfile, &
+    rdxx_cfg%Tout, rdxx_cfg%nTout, rdxx_cfg%Toutscaling, &
+    cont_lut_out, lam_min, lam_max, n_cont_lam)
   !
 end subroutine my_radex_prepare
 
 
-subroutine make_local_cont_lut(filename, usefile, Ts, nTs, &
+subroutine make_local_cont_lut(filename, usefile, Ts, nTs, scaling, &
   cont_lut, lam_min, lam_max, n)
   ! Prepare for the continuum background (usually just cmb).
   character(len=128), intent(in) :: filename
   logical, intent(in) :: usefile
   integer, intent(in) :: nTs
-  double precision, dimension(nTs), intent(in) :: Ts
+  double precision, dimension(nTs), intent(in) :: Ts, scaling
   type(type_continuum_lut), intent(out) :: cont_lut
   double precision, intent(in) :: lam_min, lam_max
   integer, intent(in) :: n
@@ -449,7 +467,7 @@ subroutine make_local_cont_lut(filename, usefile, Ts, nTs, &
     ! Energy per unit area per unit frequency per second per sqradian
     cont_lut%J(i) = 0D0
     do j=1, nTs
-      cont_lut%J(i) = cont_lut%J(i) + planck_B_nu(Ts(j), freq)
+      cont_lut%J(i) = cont_lut%J(i) + planck_B_nu(Ts(j), freq) * scaling(j)
     end do
     !
     if (usefile) then
