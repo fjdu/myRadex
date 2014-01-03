@@ -42,7 +42,7 @@ type :: type_rdxx_cfg
   !
   character(len=16)  :: geotype = ''
   !
-  integer :: nTbg = 0
+  integer :: nTbg = 1
   double precision, dimension(ndim_Tbg) :: Tbg = 0D0
   double precision, dimension(ndim_Tbg) :: Tbgscaling = 1D0
   logical :: provide_bgfile = .false.
@@ -375,7 +375,6 @@ subroutine my_radex_prepare
     rdxx_cfg%provide_bgfile, &
     rdxx_cfg%Tbg, rdxx_cfg%nTbg, rdxx_cfg%Tbgscaling, &
     cont_lut_bg, lam_min, lam_max, n_cont_lam)
-  cont_lut_bg%alpha = 0D0
   !
   call make_local_cont_lut( &
     trim(combine_dir_filename(rdxx_cfg%dir_in, rdxx_cfg%filename_in)), &
@@ -394,11 +393,11 @@ end subroutine my_radex_prepare
 
 subroutine make_local_cont_lut(filename, usefile, Ts, nTs, scaling, &
   cont_lut, lam_min, lam_max, n)
-  ! Prepare for the continuum background (usually just cmb).
-  character(len=128), intent(in) :: filename
+  ! Prepare for the continuum radiation field (usually just cmb).
+  character(len=*), intent(in) :: filename
   logical, intent(in) :: usefile
   integer, intent(in) :: nTs
-  double precision, dimension(nTs), intent(in) :: Ts, scaling
+  double precision, dimension(:), intent(in) :: Ts, scaling
   type(type_continuum_lut), intent(out) :: cont_lut
   double precision, intent(in) :: lam_min, lam_max
   integer, intent(in) :: n
