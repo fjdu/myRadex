@@ -87,11 +87,11 @@
   rdxx_cfg%dir_bg               = './background/'
   rdxx_cfg%filename_bg          = 'bg.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
   !
-  ! Inner continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+  ! Inner diffuse continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
   ! When you include continuum absorption, you must provide a reasonable
   ! density of the molecule you are studying or provide a length scale, so that
   ! the continuum optical depth can be calculated.
-  rdxx_cfg%nTin                 = 0 ! Number (<=8) of background temperatures; set it to zero to disable it.
+  rdxx_cfg%nTin                 = 1 ! Number (<=8) of background temperatures; set it to zero to disable it.
   rdxx_cfg%Tin                  = 3d2 ! K
   rdxx_cfg%provide_infile       = .false. ! Whether to use file input.
   rdxx_cfg%dir_in               = './inner_field/'

@@ -11,6 +11,7 @@
 ! Written by Fujun Du, fujun.du@gmail.com, fdu@umich.edu
 !
 ! 2014-01-02 Thu 02:43:39
+! 2014-01-02 Thu 22:58:10
 !
 
 
@@ -373,13 +374,13 @@ subroutine my_radex_prepare
 end subroutine my_radex_prepare
 
 
-subroutine make_local_cont_lut(filename, usefile, Tbg, nTbg, &
+subroutine make_local_cont_lut(filename, usefile, Ts, nTs, &
   cont_lut, lam_min, lam_max, n)
   ! Prepare for the continuum background (usually just cmb).
   character(len=128), intent(in) :: filename
   logical, intent(in) :: usefile
-  integer, intent(in) :: nTbg
-  double precision, dimension(nTbg), intent(in) :: Tbg
+  integer, intent(in) :: nTs
+  double precision, dimension(nTs), intent(in) :: Ts
   type(type_continuum_lut), intent(out) :: cont_lut
   double precision, intent(in) :: lam_min, lam_max
   integer, intent(in) :: n
@@ -390,6 +391,11 @@ subroutine make_local_cont_lut(filename, usefile, Tbg, nTbg, &
   double precision frac, tmp, tmp1
   character(len=128) str
   character, parameter :: commentstr = '!'
+  !
+  if ((.not. usefile) .and. (nTs .lt. 1)) then
+    cont_lut%n = 0
+    return
+  end if
   !
   if (.not. allocated(cont_lut%lam)) then
     cont_lut%n = n
@@ -435,15 +441,15 @@ subroutine make_local_cont_lut(filename, usefile, Tbg, nTbg, &
       dlam = dlam * lam_ratio
     end if
     !
-    cont_lut%alpha(i) = 0D0 ! absorption
+    cont_lut%alpha(i) = 0D0
     !
     lam = cont_lut%lam(i) + dlam * 0.5D0
     freq = phy_SpeedOfLight_CGS / (lam * phy_micron2cm)
     !
     ! Energy per unit area per unit frequency per second per sqradian
     cont_lut%J(i) = 0D0
-    do j=1, nTbg
-      cont_lut%J(i) = cont_lut%J(i) + planck_B_nu(Tbg(j), freq)
+    do j=1, nTs
+      cont_lut%J(i) = cont_lut%J(i) + planck_B_nu(Ts(j), freq)
     end do
     !
     if (usefile) then

@@ -11,6 +11,7 @@
 ! Written by Fujun Du, fujun.du@gmail.com, fdu@umich.edu
 !
 ! 2014-01-02 Thu 02:43:39
+! 2014-01-02 Thu 22:58:37
 !
 
 
@@ -751,14 +752,15 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     do j=1, a_mol_using%colli_data%list(i)%n_transition
       iup = a_mol_using%colli_data%list(i)%iup(j)
       ilow = a_mol_using%colli_data%list(i)%ilow(j)
-      deltaE = a_mol_using%level_list(iup)%energy - a_mol_using%level_list(ilow)%energy
+      deltaE = a_mol_using%level_list(iup)%energy - &
+               a_mol_using%level_list(ilow)%energy
       if (iL .eq. iR) then
         Cul = a_mol_using%colli_data%list(i)%Cul(iL, j)
       else
         TL = a_mol_using%colli_data%list(i)%T_coll(iL)
         TR = a_mol_using%colli_data%list(i)%T_coll(iR)
         Cul = (a_mol_using%colli_data%list(i)%Cul(iL, j) * (TR - Tkin) + &
-                a_mol_using%colli_data%list(i)%Cul(iR, j) * (Tkin - TL)) / (TR - TL)
+               a_mol_using%colli_data%list(i)%Cul(iR, j) * (Tkin - TL)) / (TR - TL)
       end if
       Clu = Cul * exp(-deltaE/Tkin) * &
              a_mol_using%level_list(iup)%weight / &
