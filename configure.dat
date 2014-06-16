@@ -36,35 +36,35 @@
 !
 &rdxx_configure
   rdxx_cfg%dir_transition_rates = '/Users/fdu/not_synced/work/' !'./'
-  rdxx_cfg%filename_molecule    = 'oH2CO-H2.dat' !'oh2o@rovib.dat' !'12C16O_H2.dat'
+  rdxx_cfg%filename_molecule    = 'oh2o@rovib.dat'  !12C16O_H2.dat' ! 'oH2CO-H2.dat' 
   rdxx_cfg%dir_save             = './'
   rdxx_cfg%filename_save        = 'output.dat'
   !
   ! Output frequency range
-  rdxx_cfg%freqmin              = 1D11 ! Hz
-  rdxx_cfg%freqmax              = 1D12 ! Hz
+  rdxx_cfg%freqmin              = 5.5D11 ! Hz
+  rdxx_cfg%freqmax              = 5.6D11 ! Hz
   !
   ! The following accept vector format inputs which will be looped over automatically.
   !
   ! Kinetic temperature
-  rdxx_cfg%nTkin                = 3
-  rdxx_cfg%Tkin                 = 1e3 2e3 4e3 !31.623D0  794.328D0  10.0 20.0 ! K
+  rdxx_cfg%nTkin                = 2
+  rdxx_cfg%Tkin                 = 50.0 60.0 1e3 2e3 4e3 !31.623D0  794.328D0  10.0 20.0 ! K
   !
   ! Velocity width
   rdxx_cfg%ndv                  = 1
   rdxx_cfg%dv                   = 1d5 ! cm s-1
   !
   ! Column density of the molecule you are studying
-  rdxx_cfg%nNcol_x              = 4
-  rdxx_cfg%Ncol_x               = 1e12 1e18 1e19 1e20 ! 3.905E+17  1e17 1e16 1e15 1e14 1e13
+  rdxx_cfg%nNcol_x              = 2
+  rdxx_cfg%Ncol_x               = 1e15 1e12 1e18 1e19 1e20 ! 3.905E+17  1e17 1e16 1e15 1e14 1e13
   !
   ! Volumn density of the molecule you are studying; redundant and can be ignored
   rdxx_cfg%nn_x                 = 1
   rdxx_cfg%n_x                  = 1D0 ! Does not matter when there is no continuum opacity.
   !
   ! Density of collisional partners
-  rdxx_cfg%ndens                = 4  ! Too many of them, so vary them (if needed) altogether.
-  rdxx_cfg%n_H2                 = 12.620E+03 2e4 1e5 1e6 1e2 ! cm-3, total H atom density
+  rdxx_cfg%ndens                = 2  ! Too many of them, so vary them (if needed) altogether.
+  rdxx_cfg%n_H2                 = 1e8 1e10 12.620E+03 2e4 1e5 1e6 1e2 ! cm-3, total H atom density
   rdxx_cfg%n_HI                 = 0D0
   rdxx_cfg%n_oH2                = 0D0 ! If zero, calculate from n_H2 assuming 3:1.
   rdxx_cfg%n_pH2                = 0D0
