@@ -14,4 +14,4 @@ functionalities in the ```Fortran``` source code are included in the wrapper
 
 We use the [LAMDA](http://home.strw.leidenuniv.nl/~moldata/molecules.html) format for the input energy levels and transition rates.
 
-This code has not been thoroughly tested, and it is possible that some input files cannot be loaded properly.
+This code has not been thoroughly tested, and it is possible that some input files won't load properly.
