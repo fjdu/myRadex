@@ -34,7 +34,7 @@ type :: type_rdxx_cfg
   character(len=128) :: filename_save = 'output.dat'
   logical :: verbose = .true.
   !
-  double precision freqmin, freqmax
+  double precision :: freqmin=0D0, freqmax=1D99
   !
   double precision :: max_evol_time = 1D8
   real :: max_code_run_time = 5.0
@@ -84,20 +84,30 @@ namelist /rdxx_configure/ rdxx_cfg
 contains
 
 
-subroutine do_my_radex
+subroutine do_my_radex(do_init)
+  logical, intent(in), optional :: do_init
+  logical do_ini
   integer i, itot, ntot
   integer iTkin, idv, in_x, iNcol_x, idens
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s
   double precision Inu_t, tau, t1, t2
   integer flag_good
   !
+  if (present(do_init)) then
+    do_ini = do_init
+  else
+    do_ini = .true.
+  end if
+  !
   write(*, '(A)') 'Code running...'
   if (.not. rdxx_cfg%verbose) then
     write(*, '(A)') 'Runtime message disabled.'
   end if
   !
-  ! Load the molecular data, etc.
-  call my_radex_prepare
+  if (do_ini) then
+    ! Load the molecular data, etc.
+    call my_radex_prepare
+  end if
   !
   call openFileSequentialWrite(rdxx_cfg%fU, &
     combine_dir_filename(rdxx_cfg%dir_save, &
@@ -140,7 +150,7 @@ subroutine do_my_radex
       rdxx_cfg%nTkin, rdxx_cfg%ndv, rdxx_cfg%nn_x, &
       rdxx_cfg%nNcol_x, rdxx_cfg%ndens, &
       'Loop order: Tkin, dv, n_x, Ncol_x, dens'
-    write(rdxx_cfg%fU, '(3("!", ES12.4, " =", A8/), ("!", ES12.4, " =", A8))') &
+    write(rdxx_cfg%fU, '(3("!", ES12.4E2, " =", A8/), ("!", ES12.4E2, " =", A8))') &
       rdxx_cfg%Tkin(rdxx_cfg%iTkin), 'Tkin', &
       rdxx_cfg%dv(rdxx_cfg%idv), 'dv', &
       rdxx_cfg%n_x(rdxx_cfg%in_x), 'n_x', &
@@ -154,7 +164,7 @@ subroutine do_my_radex
         rdxx_cfg%nTkin, rdxx_cfg%ndv, rdxx_cfg%nn_x, &
         rdxx_cfg%nNcol_x, rdxx_cfg%ndens, &
         'Loop order: Tkin, dv, n_x, Ncol_x, dens'
-      write(*, '(3("!", ES12.4, " =", A8/), ("!", ES12.4, " =", A8))') &
+      write(*, '(3("!", ES12.4E2, " =", A8/), ("!", ES12.4E2, " =", A8))') &
         rdxx_cfg%Tkin(rdxx_cfg%iTkin), 'Tkin', &
         rdxx_cfg%dv(rdxx_cfg%idv), 'dv', &
         rdxx_cfg%n_x(rdxx_cfg%in_x), 'n_x', &
@@ -197,8 +207,8 @@ subroutine do_my_radex
         flux_K_km_s = Tr * a_mol_using%dv / 1D5 * phy_GaussFWHM_c
         flux_CGS = (Inu_t - r%J_cont_bg) * &
           a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
-        write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7, 9ES12.3, 2F7.1, &
-                  &3ES12.3, I2)') &
+        write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7E2, 9ES12.3E3, 2F7.1, &
+                  &3ES12.3E3, I2)') &
           r%iup-1, r%ilow-1, r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
           fup, flow, flux_K_km_s, flux_CGS, r%beta, &
           r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, flag_good
@@ -314,11 +324,11 @@ subroutine my_radex_prepare_molecule
       !
     end select
     !
-    write(rdxx_cfg%fU, '("!", ES12.4, " =", A8)') &
+    write(rdxx_cfg%fU, '("!", ES12.4E2, " =", A8)') &
       a_mol_using%colli_data%list(i)%dens_partner, &
       trim(a_mol_using%colli_data%list(i)%name_partner)
     if (rdxx_cfg%verbose) then
-      write(*, '("!", ES12.4, " =", A8)') &
+      write(*, '("!", ES12.4E2, " =", A8)') &
         a_mol_using%colli_data%list(i)%dens_partner, &
         trim(a_mol_using%colli_data%list(i)%name_partner)
     end if
