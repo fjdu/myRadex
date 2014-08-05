@@ -3,7 +3,7 @@ executable is named ```my_radex```) by running ```make``` in the command line,
 then edit the configuration file (```configure.dat```) to meet your needs.
 After this execute the command
 
-    ```./my_radex configure.dat.```
+    ./my_radex configure.dat.
 
 A ```python``` wrapper is also included.  To make the wrapper, run ```make
 wrapper``` in the command line.  For its usage, see
