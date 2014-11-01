@@ -188,8 +188,10 @@ subroutine load_moldata_LAMBDA(filename)
   do i=1, a_mol_using%n_level
     read(fU, strfmt_row) strtmp
     call split_str_by_space(strtmp, str_split, nstr_split, nout)
-    read(str_split(2), strfmt_float) a_mol_using%level_list(i)%energy
-    read(str_split(3), strfmt_float) a_mol_using%level_list(i)%weight
+    ! was strfmt_float, but the infile is not guaranteed to be
+    ! fixed width; therefore, use * and 'cast' into float
+    read(str_split(2), *) a_mol_using%level_list(i)%energy
+    read(str_split(3), *) a_mol_using%level_list(i)%weight
   end do
   !
   ! Get radiative transitions
@@ -246,14 +248,32 @@ subroutine load_moldata_LAMBDA(filename)
   read(fU,'(I4)') a_mol_using%colli_data%n_partner
   allocate(a_mol_using%colli_data%list(a_mol_using%colli_data%n_partner))
   do i=1, a_mol_using%colli_data%n_partner
-    ! Get the name of partner
+    ! Get the ID of partner: the first entry on the line is the collider ID
+    ! (the rest is junk)
     read(fU,'(A1)') strtmp
     read(fU, strfmt_row) strtmp
     call split_str_by_space(strtmp, str_split, nstr_split, nout)
-    a_mol_using%colli_data%list(i)%name_partner = trim(str_split(4))
-    if (a_mol_using%colli_data%list(i)%name_partner .eq. 'electron') then
-      a_mol_using%colli_data%list(i)%name_partner = 'e'
-    end if
+    strtmp = str_split(1)
+    select case (strtmp)
+        case ('1')
+            a_mol_using%colli_data%list(i)%name_partner = 'H2'
+        case ('2')
+            a_mol_using%colli_data%list(i)%name_partner = 'pH2'
+        case ('3')
+            a_mol_using%colli_data%list(i)%name_partner = 'oH2'
+        case ('4')
+            a_mol_using%colli_data%list(i)%name_partner = 'E'
+        case ('5')
+            a_mol_using%colli_data%list(i)%name_partner = 'H'
+        case ('6')
+            a_mol_using%colli_data%list(i)%name_partner = 'HE'
+        case ('7')
+            a_mol_using%colli_data%list(i)%name_partner = 'H+'
+    end select
+    !a_mol_using%colli_data%list(i)%name_partner = trim(str_split(4))
+    !if (a_mol_using%colli_data%list(i)%name_partner .eq. 'electron') then
+    !  a_mol_using%colli_data%list(i)%name_partner = 'e'
+    !end if
     ! Get the number of transitions and temperatures
     read(fU,'(A1)') strtmp
     read(fU,'(I8)') a_mol_using%colli_data%list(i)%n_transition
