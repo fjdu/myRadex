@@ -500,7 +500,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
   !
   tt = abs(tau)
   select case(geotype)
-    case ('spherical', 'Spherical', 'SPHERICAL')
+    case ('spherical', 'Spherical', 'SPHERICAL', 'sphere', 'SPHERE')
       if (tt .le. const_small_tau) then
         ! Error < const_small_tau
         beta = 1D0

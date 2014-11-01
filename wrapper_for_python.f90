@@ -57,6 +57,7 @@ subroutine run_one_params( &
     oH2_density_CGS, pH2_density_CGS, &
     HII_density_CGS, Electron_density_CGS, &
     n_levels, n_item, n_transitions, &
+    geotype, &
     energies, f_occupations, data_transitions, cooling_rate)
   !
   use my_radex
@@ -68,6 +69,7 @@ subroutine run_one_params( &
     HII_density_CGS, Electron_density_CGS
   !
   integer, intent(in) :: n_levels, n_item, n_transitions
+  character(len=10), intent(in) :: geotype
   double precision, dimension(n_levels), intent(out) :: energies, f_occupations
   double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
   double precision, intent(out) :: cooling_rate
@@ -81,6 +83,7 @@ subroutine run_one_params( &
   rdxx_cfg%nn_x    = 1
   rdxx_cfg%nNcol_x = 1
   rdxx_cfg%ndens   = 1
+  rdxx_cfg%geotype = geotype
   !
   rdxx_cfg%iTkin   = 1
   rdxx_cfg%idv     = 1
