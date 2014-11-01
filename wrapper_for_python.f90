@@ -54,7 +54,7 @@ subroutine run_one_params( &
     Tkin, dv_CGS, &
     dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
-    oH2_density_CGS, pH2_densty_CGS, &
+    oH2_density_CGS, pH2_density_CGS, &
     HII_density_CGS, Electron_density_CGS, &
     n_levels, n_item, n_transitions, &
     energies, f_occupations, data_transitions, cooling_rate)
@@ -64,7 +64,7 @@ subroutine run_one_params( &
   !
   double precision, intent(in) :: Tkin, dv_CGS, dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
-    oH2_density_CGS, pH2_densty_CGS, &
+    oH2_density_CGS, pH2_density_CGS, &
     HII_density_CGS, Electron_density_CGS
   !
   integer, intent(in) :: n_levels, n_item, n_transitions
@@ -96,7 +96,7 @@ subroutine run_one_params( &
   rdxx_cfg%n_H2(1) = H2_density_CGS
   rdxx_cfg%n_HI(1) = HI_density_CGS
   rdxx_cfg%n_oH2(1) = oH2_density_CGS
-  rdxx_cfg%n_pH2(1) = pH2_densty_CGS
+  rdxx_cfg%n_pH2(1) = pH2_density_CGS
   rdxx_cfg%n_Hplus(1) = HII_density_CGS
   rdxx_cfg%n_E(1) = Electron_density_CGS
   !
