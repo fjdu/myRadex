@@ -21,15 +21,22 @@ character(len=32) :: molecule_name = ''
 contains
 
 
-subroutine config_basic(dir_transition_rates, filename_molecule, verbose, &
+subroutine config_basic(dir_transition_rates, filename_molecule, &
+    Tbg, &
+    verbose, &
     n_levels, n_item, n_transitions)
   use my_radex
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
+  double precision, intent(in) :: Tbg
   logical, intent(in) :: verbose
   integer, intent(out) :: n_levels, n_item, n_transitions
   !
   rdxx_cfg%dir_transition_rates = dir_transition_rates
   rdxx_cfg%filename_molecule = filename_molecule
+  !
+  rdxx_cfg%nTbg = 1
+  rdxx_cfg%Tbg(1) = Tbg
+  !
   rdxx_cfg%verbose = verbose
   !
   if (verbose) then
