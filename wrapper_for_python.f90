@@ -5,7 +5,7 @@ implicit none
 
 logical :: flag_good
 
-integer, parameter :: n_item_column = 19
+integer, parameter :: n_item_column = 21
 
 character(len=64) :: &
     About = 'Author: Fujun Du (fujun.du@gmail.com, fdu@umich.edu)'
@@ -14,7 +14,8 @@ character(len=128) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
     // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// &
     'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux' //' '// 'beta' //' ' &
-    // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu'
+    // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu'&
+    //' '// 'Jback' //' '// 'flux_dens' 
 
 character(len=32) :: molecule_name = ''
 
@@ -156,7 +157,7 @@ subroutine run_one_params( &
         (/ &
         dble(r%iup-1), dble(r%ilow-1), r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
         fup, flow, flux_K_km_s, flux_CGS, r%beta, &
-        r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu /)
+        r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, r%J_cont_bg, Inu_t /)
     end associate
   end do
   !
