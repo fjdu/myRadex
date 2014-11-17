@@ -324,9 +324,9 @@ subroutine my_radex_prepare_molecule
       !
     end select
     !
-    write(rdxx_cfg%fU, '("!", ES12.4E2, " =", A8)') &
-      a_mol_using%colli_data%list(i)%dens_partner, &
-      trim(a_mol_using%colli_data%list(i)%name_partner)
+    !write(rdxx_cfg%fU, '("!", ES12.4E2, " =", A8)') &
+    !  a_mol_using%colli_data%list(i)%dens_partner, &
+    !  trim(a_mol_using%colli_data%list(i)%name_partner)
     if (rdxx_cfg%verbose) then
       write(*, '("!", ES12.4E2, " =", A8)') &
         a_mol_using%colli_data%list(i)%dens_partner, &
