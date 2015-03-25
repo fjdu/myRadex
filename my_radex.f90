@@ -436,6 +436,7 @@ subroutine make_local_cont_lut(filename, usefile, Ts, nTs, scaling, &
     allocate(bglam(nrow), bgval(nrow), bgalpha(nrow))
     bglam = 0D0
     bgval = 0D0
+    bgalpha = 0D0
     call openFileSequentialRead(fUnit, filename, 99, 1)
     i = 0
     do

@@ -80,7 +80,7 @@ end type type_molecule_energy_set
 type :: type_statistic_equil_params
   integer nitem
   double precision :: RTOL = 1D-4, ATOL = 1D-20
-  double precision :: t_max = 1D9, dt_first_step = 1D-6, ratio_tstep = 1.2D0
+  double precision :: t_max = 1D9, dt_first_step = 1D-4, ratio_tstep = 1.1D0
   real :: max_runtime_allowed = 5.0
   integer n_record
   integer :: &
