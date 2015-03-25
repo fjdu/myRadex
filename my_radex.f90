@@ -362,8 +362,8 @@ subroutine my_radex_prepare
   !
   ! Prepare for the storage
   statistic_equil_params%NEQ = a_mol_using%n_level
-  statistic_equil_params%LIW = 20 + statistic_equil_params%NEQ
-  statistic_equil_params%LRW = 22 + 9*statistic_equil_params%NEQ + &
+  statistic_equil_params%LIW = 50 + statistic_equil_params%NEQ
+  statistic_equil_params%LRW = 61 + 13*statistic_equil_params%NEQ + &
                                statistic_equil_params%NEQ*statistic_equil_params%NEQ
   if (statistic_equil_params%NEQ .gt. a_mol_using%n_level) then
     if (allocated(statistic_equil_params%IWORK)) then

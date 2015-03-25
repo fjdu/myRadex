@@ -424,6 +424,46 @@ subroutine statistic_equil_solve
 end subroutine statistic_equil_solve
 
 
+subroutine statistic_equil_solve_Newton
+  external stat_equili_fcn, stat_equili_jac
+  double precision, dimension(a_mol_using%n_level) :: XSCAL
+  integer IERR
+  integer, dimension(50) :: IOPT
+  !
+  XSCAL = a_mol_using%f_occupation*1D-10 + 1D-30
+  statistic_equil_params%RTOL = 1D-10
+  IOPT = 0
+  !
+  statistic_equil_params%IWORK = 0
+  statistic_equil_params%RWORK = 0D0
+  !
+  IOPT(3) = 1 ! JACGEN
+  IOPT(11) = 0 ! MPRERR
+  IOPT(31) = 4 ! NONLIN
+  !
+  statistic_equil_params%IWORK(1) = 50000 ! NITER
+  !
+  call NLEQ1( &
+             a_mol_using%n_level, &
+             stat_equili_fcn, &
+             stat_equili_jac, &
+             a_mol_using%f_occupation, &
+             XSCAL, &
+             statistic_equil_params%RTOL, &
+             IOPT, &
+             IERR, &
+             statistic_equil_params%LIW, &
+             statistic_equil_params%IWORK, &
+             statistic_equil_params%LRW, &
+             statistic_equil_params%RWORK)
+  if (IERR .eq. 10) then
+    write(*, '(/A)') 'LIW too small!'
+    stop
+  end if
+  a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)
+end subroutine statistic_equil_solve_Newton
+
+
 subroutine get_cont_alpha(cont_lut, lam, alp, J)
   type(type_continuum_lut), intent(in) :: cont_lut
   double precision, intent(in) :: lam
@@ -559,6 +599,45 @@ end module statistic_equilibrium
 
 
 
+subroutine stat_equili_fcn(N, X, F, IFAIL)
+  integer, intent(in) :: N
+  double precision, intent(in), dimension(N) :: X
+  double precision, intent(out), dimension(N) :: F
+  integer, intent(inout) :: IFAIL
+  integer i
+  IFAIL = 0
+  call stat_equili_ode_f(N, 0D0, X, F)
+  F(N) = 0D0
+  do i=1, N
+    F(N) = F(N) + X(i)
+    if (X(i) .lt. 0D0) then
+      IFAIL = 1
+    end if
+  end do
+  F(N) = F(N) - 1D0
+  write(*,*) X
+end subroutine stat_equili_fcn
+
+
+
+subroutine stat_equili_jac(N, LDJAC, X, DFDX, IFAIL)
+  integer, intent(in) :: N, LDJAC
+  double precision, intent(in), dimension(N) :: X
+  double precision, intent(out), dimension(LDJAC, N) :: DFDX
+  integer, intent(inout) :: IFAIL
+  integer i
+  IFAIL = 0
+  do i=1, N
+    if (X(i) .lt. 0D0) then
+      IFAIL = 1
+      exit
+    end if
+  end do
+  call stat_equili_ode_jac(N, 0D0, X, 0, 0, DFDX, LDJAC)
+  DFDX(LDJAC, 1:N) = 1D0
+end subroutine stat_equili_jac
+
+
 
 subroutine stat_equili_ode_f(NEQ, t, y, ydot)
   use statistic_equilibrium
@@ -657,6 +736,8 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
   !  write(*, '(ES12.4, I4, ES12.4, ES12.4)') t, i, y(i), ydot(i)
   !end do
 end subroutine stat_equili_ode_f
+
+
 
 
 subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
