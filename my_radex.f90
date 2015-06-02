@@ -3,7 +3,7 @@
 ! background radiation and collisional excitation.
 !
 ! The code works similar to radex
-! (see https://sron.rug.nl/~vdtak/radex/index.shtml)
+! (see http://home.strw.leidenuniv.nl/~moldata/radex.html)
 !
 ! One difference from radex is that we solve the statistical equilibrium
 ! equation using an ode solver (ODEPACK, see netlib.org/odepack/).
