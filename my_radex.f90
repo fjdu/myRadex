@@ -437,8 +437,9 @@ subroutine make_local_cont_lut(filename, usefile, Ts, nTs, scaling, &
     bglam = 0D0
     bgval = 0D0
     bgalpha = 0D0
-    call openFileSequentialRead(fUnit, filename, 99, 1)
+    call openFileSequentialRead(fUnit, filename, 999, 1)
     i = 0
+    ios = 0
     do
       i = i + 1
       read(fUnit, '(A128)', IOSTAT=ios) str
@@ -447,12 +448,16 @@ subroutine make_local_cont_lut(filename, usefile, Ts, nTs, scaling, &
       end if
       if ((str(1:1) .ne. commentstr) .and. (str(1:1) .ne. ' ')) then
         read(str, '(3F16.6)', IOSTAT=ios) bglam(i), bgval(i), bgalpha(i)
+        if (ios .ne. 0) then
+          exit
+        end if
       end if
     end do
     close(fUnit)
-    if (i .ne. nrow) then
+    if ((i-1) .ne. nrow) then
       write(*, '(A)') 'Error loading background file.'
       write(*, '(A)') 'Maybe something not correct in the file format.'
+      write(*, '("nrow,i,ios=", I6, I6, I6)') nrow, i, ios
     end if
   end if
   !
