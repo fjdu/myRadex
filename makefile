@@ -20,6 +20,7 @@ get_NewtonLib:
 	mv nleq1/wnorm.f .
 	mv nleq1/zibconst.f .
 	mv nleq1/zibsec.f .
+	mv nleq1/zibmon.f .
 	rm -r nleq1
 
 my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
