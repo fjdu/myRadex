@@ -3,7 +3,7 @@
 ! background radiation and collisional excitation.
 !
 ! The code works similar to radex
-! (see https://sron.rug.nl/~vdtak/radex/index.shtml)
+! (see http://home.strw.leidenuniv.nl/~moldata/radex.html)
 !
 ! One difference from radex is that we solve the statistical equilibrium
 ! equation using an ode solver (ODEPACK, see netlib.org/odepack/).
@@ -362,8 +362,8 @@ subroutine my_radex_prepare
   !
   ! Prepare for the storage
   statistic_equil_params%NEQ = a_mol_using%n_level
-  statistic_equil_params%LIW = 20 + statistic_equil_params%NEQ
-  statistic_equil_params%LRW = 22 + 9*statistic_equil_params%NEQ + &
+  statistic_equil_params%LIW = 50 + statistic_equil_params%NEQ
+  statistic_equil_params%LRW = 61 + 13*statistic_equil_params%NEQ + &
                                statistic_equil_params%NEQ*statistic_equil_params%NEQ
   if (statistic_equil_params%NEQ .gt. a_mol_using%n_level) then
     if (allocated(statistic_equil_params%IWORK)) then
@@ -436,8 +436,10 @@ subroutine make_local_cont_lut(filename, usefile, Ts, nTs, scaling, &
     allocate(bglam(nrow), bgval(nrow), bgalpha(nrow))
     bglam = 0D0
     bgval = 0D0
-    call openFileSequentialRead(fUnit, filename, 99, 1)
+    bgalpha = 0D0
+    call openFileSequentialRead(fUnit, filename, 999, 1)
     i = 0
+    ios = 0
     do
       i = i + 1
       read(fUnit, '(A128)', IOSTAT=ios) str
@@ -446,12 +448,16 @@ subroutine make_local_cont_lut(filename, usefile, Ts, nTs, scaling, &
       end if
       if ((str(1:1) .ne. commentstr) .and. (str(1:1) .ne. ' ')) then
         read(str, '(3F16.6)', IOSTAT=ios) bglam(i), bgval(i), bgalpha(i)
+        if (ios .ne. 0) then
+          exit
+        end if
       end if
     end do
     close(fUnit)
-    if (i .ne. nrow) then
+    if ((i-1) .ne. nrow) then
       write(*, '(A)') 'Error loading background file.'
       write(*, '(A)') 'Maybe something not correct in the file format.'
+      write(*, '("nrow,i,ios=", I6, I6, I6)') nrow, i, ios
     end if
   end if
   !
