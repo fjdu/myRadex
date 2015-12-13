@@ -8,6 +8,20 @@ wrapper: wrapper_my_radex.so
 lflags = -O3 -fPIC
 cflags = $(lflags) -c
 
+nleq1.f : get_NewtonLib
+
+get_NewtonLib:
+	curl http://elib.zib.de/pub/elib/codelib/nleq1.tar | tar -xv
+	mv nleq1/linalg_nleq1.f .
+	mv nleq1/main_nleq1.f .
+	mv nleq1/main_nleq1_easy.f .
+	mv nleq1/nleq1.f .
+	mv nleq1/nleq1e.f .
+	mv nleq1/wnorm.f .
+	mv nleq1/zibconst.f .
+	mv nleq1/zibsec.f .
+	rm -r nleq1
+
 my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 	$(cpl) $(lflags) -o my_radex configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 
