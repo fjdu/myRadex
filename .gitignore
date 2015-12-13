@@ -6,3 +6,14 @@
 *tmp*
 my_radex
 *.so
+
+# files downloaded
+linalg_nleq1.f
+main_nleq1.f
+main_nleq1_easy.f
+nleq1.f
+nleq1e.f
+wnorm.f
+zibconst.f
+zibmon.f
+zibsec.f
