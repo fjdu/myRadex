@@ -8,11 +8,25 @@ wrapper: wrapper_my_radex.so
 lflags = -O3
 cflags = $(lflags) -c
 
-my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
-	$(cpl) $(lflags) -o my_radex configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+nleq1.f : get_NewtonLib
 
-wrapper_my_radex.so: wrapper_for_python.f90 my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
-	f2py -c -m wrapper_my_radex wrapper_for_python.f90 -L my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+get_NewtonLib:
+	curl http://elib.zib.de/pub/elib/codelib/nleq1.tar | tar -xv
+	mv nleq1/linalg_nleq1.f .
+	mv nleq1/main_nleq1.f .
+	mv nleq1/main_nleq1_easy.f .
+	mv nleq1/nleq1.f .
+	mv nleq1/nleq1e.f .
+	mv nleq1/wnorm.f .
+	mv nleq1/zibconst.f .
+	mv nleq1/zibsec.f .
+	rm -r nleq1
+
+my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+	$(cpl) $(lflags) -o my_radex configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+
+wrapper_my_radex.so: wrapper_for_python.f90 my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+	f2py -c -m wrapper_my_radex wrapper_for_python.f90 -L my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 
 configure.o: configure.f90 sub_trivials.o my_radex.o statistic_equilibrium.o
 	$(cpl) $(cflags) configure.f90
