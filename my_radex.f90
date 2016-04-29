@@ -66,6 +66,8 @@ type :: type_rdxx_cfg
   logical :: provideLength = .false.
   double precision length_scale
   !
+  double precision :: beam_FWHM_in_arcsec = 0.4D0
+  !
   double precision, dimension(ndim_cfg_vec) :: &
     Tkin, dv, Ncol_x, n_x, &
     n_H2, n_HI, n_oH2, n_pH2, n_Hplus, n_E, n_He   
@@ -89,9 +91,11 @@ subroutine do_my_radex(do_init)
   logical do_ini
   integer i, itot, ntot
   integer iTkin, idv, in_x, iNcol_x, idens
-  double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s
+  double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s, flux_Jy
   double precision Inu_t, tau, t1, t2
+  double precision beam_area
   integer flag_good
+  character(len=9) beam_FWHM_str
   !
   if (present(do_init)) then
     do_ini = do_init
@@ -109,18 +113,20 @@ subroutine do_my_radex(do_init)
     call my_radex_prepare
   end if
   !
+  write(beam_FWHM_str, '("(BM:", F4.1, ")")') rdxx_cfg%beam_FWHM_in_arcsec
+  !
   call openFileSequentialWrite(rdxx_cfg%fU, &
     combine_dir_filename(rdxx_cfg%dir_save, &
     rdxx_cfg%filename_save), 999, 1)
-  write(rdxx_cfg%fU, '(2A5, A12, 2A15, 9A12, 2A7, &
+  write(rdxx_cfg%fU, '(2A5, A12, 2A15, 10A12, 2A7, &
             &3A12, A2)') &
     '! iup', 'ilow', 'Eup', 'freq', 'lam', 'Tex', 'tau', 'Tr', &
-    'fup', 'flow', 'flux_K', 'flux', 'beta', &
+    'fup', 'flow', 'flux_K', 'flux_int', 'flux_Jy', 'beta', &
     'Jnu', 'gup', 'glow', 'Aul', 'Bul', 'Blu', 'q'
-  write(rdxx_cfg%fU, '(2A5, A12, 2A15, 9A12, 2A7, &
+  write(rdxx_cfg%fU, '(2A5, A12, 2A15, 10A12, 2A7, &
             &3A12, A2)') &
     '!    ', '  ', 'K', 'Hz', 'micron', 'K', '', 'K', &
-    '   ', '    ', 'K km/s', 'erg/cm2/s', '    ', &
+    '   ', '    ', 'K km/s', 'erg/cm2/s', 'Jy'//beam_FWHM_str, '    ', &
     '...', '   ', '    ', '...', '...', '...', ''
   !
   itot = 0
@@ -207,10 +213,12 @@ subroutine do_my_radex(do_init)
         flux_K_km_s = Tr * a_mol_using%dv / 1D5 * phy_GaussFWHM_c
         flux_CGS = (Inu_t - r%J_cont_bg) * &
           a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
-        write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7E2, 9ES12.3E3, 2F7.1, &
+        beam_area = FWHM_to_area(rdxx_cfg%beam_FWHM_in_arcsec)
+        flux_Jy = (Inu_t - r%J_cont_bg) * beam_area / phy_jansky2CGS
+        write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7E2, 10ES12.3E3, 2F7.1, &
                   &3ES12.3E3, I2)') &
           r%iup-1, r%ilow-1, r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
-          fup, flow, flux_K_km_s, flux_CGS, r%beta, &
+          fup, flow, flux_K_km_s, flux_CGS, flux_Jy, r%beta, &
           r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, flag_good
       end associate
     end do
@@ -226,6 +234,20 @@ subroutine do_my_radex(do_init)
   close(rdxx_cfg%fU)
   nullify(a_mol_using)
 end subroutine do_my_radex
+
+
+pure function FWHM_to_area(FWHM) result(res)
+  ! Given f(r) = exp(-r^2/a):
+  !     Area = Int[exp(-r^2/a) 2pi rdr] = a pi
+  ! exp(-r^2/a) = 1/2
+  !   r = sqrt(a ln2)
+  !   FWHM = 2sqrt(a ln2)
+  ! Hence
+  ! Area = pi FWHM^2 / (4ln2)
+  double precision, intent(in) :: FWHM
+  double precision :: res
+  res = phy_Pi / log(16D0) * (FWHM / 3.6D3 * phy_Deg2Rad)**2
+end function FWHM_to_area
 
 
 subroutine my_radex_prepare_molecule

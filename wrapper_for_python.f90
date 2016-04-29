@@ -13,7 +13,7 @@ character(len=64) :: &
 character(len=128) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
     // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// &
-    'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux' //' '// 'beta' //' ' &
+    'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux_int' // 'flux_Jy' //' '// 'beta' //' ' &
     // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu'
 
 character(len=32) :: molecule_name = ''
