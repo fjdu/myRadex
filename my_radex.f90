@@ -212,7 +212,7 @@ subroutine do_my_radex(do_init)
           (2D0 * r%freq**2 * phy_kBoltzmann_CGS)
         flux_K_km_s = Tr * a_mol_using%dv / 1D5 * phy_GaussFWHM_c
         flux_CGS = (Inu_t - r%J_cont_bg) * &
-          a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
+          a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS * (4D0 * phy_Pi * phy_GaussFWHM_c)
         beam_area = FWHM_to_area(rdxx_cfg%beam_FWHM_in_arcsec)
         flux_Jy = (Inu_t - r%J_cont_bg) * beam_area / phy_jansky2CGS
         write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7E2, 10ES12.3E3, 2F7.1, &
