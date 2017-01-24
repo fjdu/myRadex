@@ -296,7 +296,7 @@ subroutine my_radex_prepare_molecule
         a_mol_using%colli_data%list(i)%dens_partner = &
           rdxx_cfg%n_H2(rdxx_cfg%idens)
       !
-      case ('o-H2', 'oH2', 'o_H2')
+      case ('o-H2', 'oH2', 'o_H2', 'OH2')
       !
         if (rdxx_cfg%n_oH2(rdxx_cfg%idens) .le. 1D-20) then
           a_mol_using%colli_data%list(i)%dens_partner = &
@@ -307,7 +307,7 @@ subroutine my_radex_prepare_molecule
             rdxx_cfg%n_oH2(rdxx_cfg%idens)
         end if
       !
-      case ('p-H2', 'pH2', 'p_H2')
+      case ('p-H2', 'pH2', 'p_H2', 'PH2')
       !
         if (rdxx_cfg%n_pH2(rdxx_cfg%idens) .le. 1D-20) then
           a_mol_using%colli_data%list(i)%dens_partner = &
@@ -346,9 +346,9 @@ subroutine my_radex_prepare_molecule
       !
     end select
     !
-    write(rdxx_cfg%fU, '("!", ES12.4E2, " =", A8)') &
-      a_mol_using%colli_data%list(i)%dens_partner, &
-      trim(a_mol_using%colli_data%list(i)%name_partner)
+    !write(rdxx_cfg%fU, '("!", ES12.4E2, " =", A8)') &
+    !  a_mol_using%colli_data%list(i)%dens_partner, &
+    !  trim(a_mol_using%colli_data%list(i)%name_partner)
     if (rdxx_cfg%verbose) then
       write(*, '("!", ES12.4E2, " =", A8)') &
         a_mol_using%colli_data%list(i)%dens_partner, &
