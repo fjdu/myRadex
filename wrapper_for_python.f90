@@ -5,7 +5,7 @@ implicit none
 
 logical :: flag_good
 
-integer, parameter :: n_item_column = 19
+integer, parameter :: n_item_column = 21
 
 character(len=64) :: &
     About = 'Author: Fujun Du (fujun.du@gmail.com, fdu@umich.edu)'
@@ -14,7 +14,8 @@ character(len=128) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
     // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// &
     'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux' //' '// 'beta' //' ' &
-    // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu'
+    // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu'&
+    //' '// 'Jback' //' '// 'flux_dens' 
 
 character(len=32) :: molecule_name = ''
 
@@ -61,9 +62,10 @@ subroutine run_one_params( &
     Tkin, dv_CGS, &
     dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
-    oH2_density_CGS, pH2_densty_CGS, &
+    oH2_density_CGS, pH2_density_CGS, &
     HII_density_CGS, Electron_density_CGS, &
     n_levels, n_item, n_transitions, &
+    geotype, &
     energies, f_occupations, data_transitions, cooling_rate)
   !
   use my_radex
@@ -71,10 +73,11 @@ subroutine run_one_params( &
   !
   double precision, intent(in) :: Tkin, dv_CGS, dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
-    oH2_density_CGS, pH2_densty_CGS, &
+    oH2_density_CGS, pH2_density_CGS, &
     HII_density_CGS, Electron_density_CGS
   !
   integer, intent(in) :: n_levels, n_item, n_transitions
+  character(len=10), intent(in) :: geotype
   double precision, dimension(n_levels), intent(out) :: energies, f_occupations
   double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
   double precision, intent(out) :: cooling_rate
@@ -88,6 +91,7 @@ subroutine run_one_params( &
   rdxx_cfg%nn_x    = 1
   rdxx_cfg%nNcol_x = 1
   rdxx_cfg%ndens   = 1
+  rdxx_cfg%geotype = geotype
   !
   rdxx_cfg%iTkin   = 1
   rdxx_cfg%idv     = 1
@@ -103,7 +107,7 @@ subroutine run_one_params( &
   rdxx_cfg%n_H2(1) = H2_density_CGS
   rdxx_cfg%n_HI(1) = HI_density_CGS
   rdxx_cfg%n_oH2(1) = oH2_density_CGS
-  rdxx_cfg%n_pH2(1) = pH2_densty_CGS
+  rdxx_cfg%n_pH2(1) = pH2_density_CGS
   rdxx_cfg%n_Hplus(1) = HII_density_CGS
   rdxx_cfg%n_E(1) = Electron_density_CGS
   !
@@ -153,7 +157,7 @@ subroutine run_one_params( &
         (/ &
         dble(r%iup-1), dble(r%ilow-1), r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
         fup, flow, flux_K_km_s, flux_CGS, r%beta, &
-        r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu /)
+        r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, r%J_cont_bg, Inu_t /)
     end associate
   end do
   !

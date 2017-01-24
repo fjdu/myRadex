@@ -5,7 +5,7 @@ all: my_radex
 wrapper: wrapper_my_radex.so
 
 
-lflags = -O3
+lflags = -O3 -fPIC
 cflags = $(lflags) -c
 
 my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
