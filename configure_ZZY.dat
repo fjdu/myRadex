@@ -1,0 +1,121 @@
+! This is an example configuration file for the code to run.
+!
+! All comments (optional) in this file should be preceded by "!".
+! Inline comments should be separated from the content by at least one blank
+! space.
+!
+! The order of the params is not important.
+!
+! The decimal point (.) is needed for float types without an exponential part.
+!   For example, if r is a float number, then r = 1.0 1.0e0 1.0d0 1e0 1d0 are
+!   OK, but r = 1 is not (maybe not always, depending on the Fortran
+!   implementation).
+!
+! A few parameters accept vectorized input.  See examples below.
+!   . The dimension of these vectors should not be larger than 100.
+!   . You can modify the value of the constant ndim_cfg_vec in the source code
+!     if you need a larger vector size.
+!   . The code will automatically loop over all these vectors.
+!     Loop order (outer -> inner): Tkin dv n_x Ncol_x n_H2
+!   . Set the vector dimension to 1 to use single value mode.
+!
+! Note that the number of collisional partners are determined by the input
+! molecular data file (e.g. from LAMBDA).
+!
+! For ortho/para H2, you can provide their densities if you want, or you can
+! set *both* of them to zero, and their values will be calculated from the H2
+! density.
+! In this calculation, if opH2eq3 is set to .true., then oH2:pH2 = 3:1 will be
+! assumed, otherwise the ratio will be calculated based on Tkin.
+!
+! Questions?  Email me at fujun.du@gmail.com
+!
+! Fujun Du
+! 2014-01-02 Thu 03:06:38
+! 2014-01-02 Thu 22:53:00
+!
+&rdxx_configure
+  rdxx_cfg%dir_transition_rates = './'
+  rdxx_cfg%filename_molecule    = '12C16O_H2.dat'
+  rdxx_cfg%dir_save             = './'
+  rdxx_cfg%filename_save        = 'output_ZZY.dat'
+  !
+  ! Output frequency range
+  rdxx_cfg%freqmin              = 1D11 ! Hz
+  rdxx_cfg%freqmax              = 1D12 ! Hz
+  !
+  ! The following accept vector format inputs which will be looped over automatically.
+  !
+  ! Kinetic temperature
+  rdxx_cfg%nTkin                = 1
+  rdxx_cfg%Tkin                 = 15 !
+  !
+  ! Velocity width
+  rdxx_cfg%ndv                  = 1
+  rdxx_cfg%dv                   = 1d5 ! cm s-1
+  !
+  ! Column density of the molecule you are studying
+  rdxx_cfg%nNcol_x              = 1
+  rdxx_cfg%Ncol_x               = 1e20 ! 3.905E+17  1e17 1e16 1e15 1e14 1e13
+  !
+  ! Volumn density of the molecule you are studying; redundant and can be ignored
+  rdxx_cfg%nn_x                 = 1
+  rdxx_cfg%n_x                  = 1D0 ! Does not matter when there is no continuum opacity.
+  !
+  ! Density of collisional partners
+  rdxx_cfg%ndens                = 1  ! Too many of them, so vary them (if needed) altogether.
+  rdxx_cfg%n_H2                 = 1e4 ! cm-3, total H atom density
+  rdxx_cfg%n_HI                 = 0D0
+  rdxx_cfg%n_oH2                = 0D0 ! If zero, calculate from n_H2 assuming 3:1.
+  rdxx_cfg%n_pH2                = 0D0
+  rdxx_cfg%n_Hplus              = 0D0
+  rdxx_cfg%n_E                  = 0D0
+  rdxx_cfg%n_He                 = 0D0
+  !
+  ! The remaining params are not looped over.
+  !
+  ! Whether to set the orthor/para ratio of H2 to 3
+  rdxx_cfg%opH2eq3              = .false.
+  !
+  ! Geometric type, can be: spherical, slab, lvg, or unspecified.
+  rdxx_cfg%geotype              = 'spherical'
+  !
+  ! Background radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+! rdxx_cfg%nTbg                 = 1 ! Number (<=8) of background temperatures; set it to zero to disable it.
+  rdxx_cfg%Tbg                  = 2.72548D0 ! K; can be vector
+  rdxx_cfg%Tbgscaling           = 1D0 ! Scaling factors; can be vector, must be of the same dimension as Tbg
+  rdxx_cfg%provide_bgfile       = .True. ! Whether to use file input.
+  rdxx_cfg%dir_bg               = './'
+  rdxx_cfg%filename_bg          = 'bg.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
+  !
+! ! Internal diffuse continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+! ! When you include continuum absorption, you must provide a reasonable
+! ! density of the molecule you are studying or provide a length scale, so that
+! ! the continuum optical depth can be calculated.
+! rdxx_cfg%nTin                 = 0 ! Number (<=8) of background temperatures; set it to zero to disable it.
+! rdxx_cfg%Tin                  = 3d2 ! K; can be vector
+! rdxx_cfg%Tinscaling           = 1D0 ! Scaling factors; can be vector, must be of the same dimension as Tin
+! rdxx_cfg%provide_infile       = .false. ! Whether to use file input.
+! rdxx_cfg%dir_in               = './internal_field/'
+! rdxx_cfg%filename_in          = 'internal.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
+! !
+! ! External continuum radiation.  Multiple components and file input accepted.  They are *summed together* in the code.
+! rdxx_cfg%nTout                = 0 ! Number (<=8) of external temperatures; set it to zero to disable it.
+! rdxx_cfg%Tout                 = 1d4 ! K; can be vector
+! rdxx_cfg%Toutscaling          = 1D-3 ! Scaling factors; can be vector, must be of the same dimension as Tout
+! rdxx_cfg%provide_outfile      = .false. ! Whether to use file input.
+! rdxx_cfg%dir_out              = './internal_field/'
+! rdxx_cfg%filename_out         = 'internal.dat' ! Three columns (lam, j_nu, k_nu) with 3F16.6 format
+  !
+  ! If .true., you need to provide a length scale, and the column density specified above is ignored.
+  rdxx_cfg%provideLength        = .false.
+  !rdxx_cfg%length_scale         = 1D18 ! cm
+  !
+  rdxx_cfg%max_code_run_time    = 15.0 ! Max acceptable code run time (for a single param set) in seconds
+  rdxx_cfg%max_evol_time        = 1D7 ! Physical evol time in seconds
+  rdxx_cfg%rtol                 = 1d-3  ! Relative tolerance for the ode solver
+  rdxx_cfg%atol                 = 1d-20 ! Absolute tolerance for the ode solver
+  rdxx_cfg%verbose              = .true. ! Whether to print out the running messages.
+/
+!-Notes------------------------------------------------------------------
+! Enter your own notes here (or anywhere else) as comments.
