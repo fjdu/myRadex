@@ -35,8 +35,8 @@
 ! 2014-01-02 Thu 22:53:00
 !
 &rdxx_configure
-  rdxx_cfg%dir_transition_rates = '/Users/fdu/not_synced/work/' !'./'
-  rdxx_cfg%filename_molecule    = 'oh2o@rovib.dat'  !12C16O_H2.dat' ! 'oH2CO-H2.dat' 
+  rdxx_cfg%dir_transition_rates = './' !'/Users/fdu/not_synced/work/' !
+  rdxx_cfg%filename_molecule    = 'c18o.dat' !'oh2o@rovib.dat'  !12C16O_H2.dat' ! 'oH2CO-H2.dat' 
   rdxx_cfg%dir_save             = './'
   rdxx_cfg%filename_save        = 'output.dat'
   !

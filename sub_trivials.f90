@@ -581,6 +581,8 @@ subroutine split_str_by_space(str, str_split, n, nout)
   integer, intent(out), optional :: nout
   integer nlen, i, istart, iend, nfound
   logical flag
+  character TABCHAR
+  TABCHAR = char(9)
   !
   nfound = 0
   !
@@ -591,7 +593,7 @@ subroutine split_str_by_space(str, str_split, n, nout)
     ! Find the starting position of the current substring
     flag = .true.
     do i=istart, nlen
-      if (len_trim(str(i:i)) .ne. 0) then
+      if ((len_trim(str(i:i)) .ne. 0) .and. (str(i:i) .ne. TABCHAR)) then
         flag = .false.
         exit
       end if
@@ -604,7 +606,7 @@ subroutine split_str_by_space(str, str_split, n, nout)
     iend = i + 1
     flag = .true.
     do i=iend, nlen
-      if (len_trim(str(i:i)) .eq. 0) then
+      if ((len_trim(str(i:i)) .eq. 0) .or. (str(i:i) .eq. TABCHAR)) then
         flag = .false.
         exit
       end if

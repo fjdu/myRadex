@@ -1,5 +1,5 @@
 cpl		?= gfortran
-f2py	?= f2py-2.7
+f2py	?= f2py
 
 all: my_radex
 
