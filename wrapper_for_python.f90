@@ -8,7 +8,7 @@ logical :: flag_good
 integer, parameter :: n_item_column = 19
 
 character(len=64) :: &
-    About = 'Author: Fujun Du (fujun.du@gmail.com, fdu@umich.edu)'
+    About = 'Author: Fujun Du (fujun.du@gmail.com, fjdu@pmo.ac.cn)'
 
 character(len=128) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &

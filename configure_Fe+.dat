@@ -37,7 +37,7 @@
 &rdxx_configure
   rdxx_cfg%dir_transition_rates = './'
   rdxx_cfg%filename_molecule    = 'Fe+_1e5K.dat'  !12C16O_H2.dat' ! 'oH2CO-H2.dat' 
-  rdxx_cfg%dir_save             = '/Users/fdu/tmpxxx/'
+  rdxx_cfg%dir_save             = '/Users/fjdu/tmpxxx/'
   rdxx_cfg%filename_save        = 'output_Fe+.dat'
   !
   ! Output frequency range

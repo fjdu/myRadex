@@ -4,6 +4,10 @@ Van der Tak, except that we take a different approach to solve the statistical
 equilibrium problem.  Given an initial distribution, what we do is to evolve
 the system towards equilibrium using an ODE solver.
 
+**Note**
+
+It seems that the python wrapper only works with python 2.7, which might be related with the fact that `f2py` is [not well adapted to python 3](https://github.com/numpy/numpy/issues/4256).
+
 To use this code, you first need to compile it using the makefile (the
 executable is named ```my_radex```) by running ```make``` in the command line,
 then edit the configuration file (```configure.dat```) to meet your needs.
