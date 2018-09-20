@@ -4,9 +4,7 @@ Van der Tak, except that we take a different approach to solve the statistical
 equilibrium problem.  Given an initial distribution, what we do is to evolve
 the system towards equilibrium using an ODE solver.
 
-**Note**
-
-It seems that the python wrapper only works with python 2.7, which might be related with the fact that `f2py` is [not well adapted to python 3](https://github.com/numpy/numpy/issues/4256).
+**Usage**
 
 To use this code, you first need to compile it using the makefile (the
 executable is named ```my_radex```) by running ```make``` in the command line,
@@ -27,3 +25,7 @@ functionalities in the ```Fortran``` source code are included in the wrapper
 We use the [LAMDA](http://home.strw.leidenuniv.nl/~moldata/molecules.html) format for the input energy levels and transition rates.
 
 This code has not been thoroughly tested, and it is possible that some input files won't load properly.
+
+**Note**
+
+It seems that the python wrapper only works with python 2.7, which might be related with the fact that `f2py` is [not well adapted to python 3](https://github.com/numpy/numpy/issues/4256).
