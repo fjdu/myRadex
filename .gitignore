@@ -1,4 +1,6 @@
 *.o
+*.so
+*.dSYM
 *.out
 *.mod
 .*.swp

@@ -161,6 +161,7 @@ subroutine load_moldata_LAMBDA(filename)
   character(len=8), parameter :: strfmt_row = '(A512)'
   character(len=8), parameter :: strfmt_float = '(F16.3)'
   character(len=8), parameter :: strfmt_int = '(I6)'
+  character(len=8), parameter :: strfmt_int_long = '(I64)'
   !double precision, parameter :: freq_conv_factor = 1D9
   !
   integer iup, ilow
@@ -181,8 +182,9 @@ subroutine load_moldata_LAMBDA(filename)
   read(fU,'(A1)') strtmp
   read(fU,'(A1)') strtmp
   read(fU,'(A1)') strtmp
-  read(fU,'(I6)') a_mol_using%n_level
+  read(fU, strfmt_int_long) a_mol_using%n_level
   read(fU,'(A1)') strtmp
+  write(*,*) 'Number of energy levels:', a_mol_using%n_level
   allocate(a_mol_using%level_list(a_mol_using%n_level), &
            a_mol_using%f_occupation(a_mol_using%n_level))
   do i=1, a_mol_using%n_level
@@ -195,7 +197,8 @@ subroutine load_moldata_LAMBDA(filename)
   ! Get radiative transitions
   allocate(a_mol_using%rad_data)
   read(fU,'(A1)') strtmp
-  read(fU,'(I8)') a_mol_using%rad_data%n_transition
+  read(fU, strfmt_int_long) a_mol_using%rad_data%n_transition
+  write(*,*) 'Number of radiative transitions:', a_mol_using%rad_data%n_transition
   read(fU,'(A1)') strtmp
   allocate(a_mol_using%rad_data%list(a_mol_using%rad_data%n_transition))
   do i=1, a_mol_using%rad_data%n_transition
@@ -243,7 +246,8 @@ subroutine load_moldata_LAMBDA(filename)
   allocate(a_mol_using%colli_data)
   ! Get the number of collisional partners
   read(fU,'(A1)') strtmp
-  read(fU,'(I4)') a_mol_using%colli_data%n_partner
+  read(fU, strfmt_int_long) a_mol_using%colli_data%n_partner
+  write(*,*) 'Number of collisional partners:', a_mol_using%colli_data%n_partner
   allocate(a_mol_using%colli_data%list(a_mol_using%colli_data%n_partner))
   do i=1, a_mol_using%colli_data%n_partner
     ! Get the name of partner
@@ -253,10 +257,14 @@ subroutine load_moldata_LAMBDA(filename)
     a_mol_using%colli_data%list(i)%name_partner = trim(str_split(4))
     if (a_mol_using%colli_data%list(i)%name_partner .eq. 'electron') then
       a_mol_using%colli_data%list(i)%name_partner = 'e'
+    else if (a_mol_using%colli_data%list(i)%name_partner .eq. 'with') then
+      a_mol_using%colli_data%list(i)%name_partner = str_split(5)
     end if
+    write(*,*) 'Name of collisional partner:', i, a_mol_using%colli_data%list(i)%name_partner
     ! Get the number of transitions and temperatures
     read(fU,'(A1)') strtmp
-    read(fU,'(I8)') a_mol_using%colli_data%list(i)%n_transition
+    read(fU, strfmt_int_long) a_mol_using%colli_data%list(i)%n_transition
+    write(*,*) 'Number of collisional transitions:', i, a_mol_using%colli_data%list(i)%n_transition
     read(fU,'(A1)') strtmp
     read(fU,'(I4)') a_mol_using%colli_data%list(i)%n_T
     !
