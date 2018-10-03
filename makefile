@@ -1,12 +1,23 @@
 cpl		?= gfortran
 f2py	?= f2py
 
+ifeq ($(cpl), ifort)
+  lflags_debug = -debug -save-temps -fpic -heap-arrays -O0 -g -traceback -check all -fpe0 -fp-stack-check -fp-model precise -fimf-arch-consistency=true -fpp
+  lflags_fast = -O2 -fpp
+else
+  lflags_debug = -ffpe-trap=invalid,zero,overflow -Og -fbacktrace -fcheck=all
+  lflags_fast = -O2
+endif
+
+all: lflags = $(lflags_fast)
 all: my_radex
 
+wrapper: lflags = $(lflags_fast)
 wrapper: wrapper_my_radex.so
 
+debug: lflags = $(lflags_debug)
+debug: my_radex
 
-lflags = -O3
 cflags = $(lflags) -c
 
 my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 

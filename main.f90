@@ -19,6 +19,7 @@ program main
 use configure
 use my_timer
 use trivials
+use my_radex
 
 implicit none
 

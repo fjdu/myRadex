@@ -36,7 +36,7 @@ type :: type_rdxx_cfg
   !
   double precision :: freqmin=0D0, freqmax=1D99
   !
-  double precision :: max_evol_time = 1D8
+  double precision :: max_evol_time = 1D6
   real :: max_code_run_time = 5.0
   double precision :: rtol = 1D-4, atol = 1D-20
   !
@@ -536,10 +536,10 @@ function planck_B_lambda(T, lambda_CGS)
   double precision planck_B_lambda
   double precision, intent(in) :: T, lambda_CGS
   double precision tmp
-  double precision, parameter :: TH = 1D-6
+  double precision, parameter :: THTINY = 1D-6
   tmp = (phy_hPlanck_CGS * phy_SpeedOfLight_CGS) / &
         (lambda_CGS * phy_kBoltzmann_CGS * T)
-  if (abs(tmp) .gt. TH) then
+  if (abs(tmp) .gt. THTINY) then
     tmp = exp(tmp) - 1D0
   end if
   planck_B_lambda = &
@@ -552,14 +552,13 @@ function planck_B_nu(T, nu)
   double precision planck_B_nu
   double precision, intent(in) :: T, nu
   double precision tmp
-  double precision, parameter :: TH = 1D-6
-  if (T .le. 1D-4) then
-    planck_B_nu = 0D0
-    return
-  end if
+  double precision, parameter :: THTINY = 1D-6, THBIG = 100D0
   tmp = (phy_hPlanck_CGS*nu) / (phy_kBoltzmann_CGS*T)
-  if (abs(tmp) .lt. TH) then
+  if (abs(tmp) .lt. THTINY) then
     planck_B_nu = 2D0*(nu/phy_SpeedOfLight_CGS)**2 * (phy_kBoltzmann_CGS*T)
+  else if (tmp .gt. THBIG) then
+    planck_B_nu = 2D0*phy_hPlanck_CGS * nu**3 / &
+                  (phy_SpeedOfLight_CGS**2) * exp(-tmp)
   else
     planck_B_nu = 2D0*phy_hPlanck_CGS * nu**3 / &
                   (phy_SpeedOfLight_CGS**2 * (exp(tmp) - 1D0))

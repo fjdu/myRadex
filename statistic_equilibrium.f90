@@ -80,7 +80,7 @@ end type type_molecule_energy_set
 type :: type_statistic_equil_params
   integer nitem
   double precision :: RTOL = 1D-4, ATOL = 1D-20
-  double precision :: t_max = 1D9, dt_first_step = 1D-4, ratio_tstep = 1.1D0
+  double precision :: t_max = 1D6, dt_first_step = 1D-4, ratio_tstep = 1.1D0
   real :: max_runtime_allowed = 5.0
   integer n_record
   integer :: &
@@ -266,7 +266,8 @@ subroutine load_moldata_LAMBDA(filename)
     read(fU, strfmt_int_long) a_mol_using%colli_data%list(i)%n_transition
     write(*,*) 'Number of collisional transitions:', i, a_mol_using%colli_data%list(i)%n_transition
     read(fU,'(A1)') strtmp
-    read(fU,'(I4)') a_mol_using%colli_data%list(i)%n_T
+    read(fU, strfmt_int_long) a_mol_using%colli_data%list(i)%n_T
+    write(*,*) 'Number of temperatures:', i, a_mol_using%colli_data%list(i)%n_T
     !
     ! Name too long...
     n_transition_ = a_mol_using%colli_data%list(i)%n_transition
@@ -387,8 +388,8 @@ subroutine statistic_equil_solve
     time_thisstep = timer%elapsed_time()
     runtime_thisstep = time_thisstep - time_laststep
     if ((runtime_thisstep .gt. &
-         max(5.0*runtime_laststep, &
-             0.1*statistic_equil_params%max_runtime_allowed)) &
+         max(100D0*runtime_laststep, &
+             2D0*statistic_equil_params%max_runtime_allowed)) &
         .or. &
         (time_thisstep .gt. statistic_equil_params%max_runtime_allowed)) then
       write(*, '(A, ES9.2/)') 'Premature finish: t = ', t
