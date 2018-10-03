@@ -553,6 +553,10 @@ function planck_B_nu(T, nu)
   double precision, intent(in) :: T, nu
   double precision tmp
   double precision, parameter :: TH = 1D-6
+  if (T .le. 1D-4) then
+    planck_B_nu = 0D0
+    return
+  end if
   tmp = (phy_hPlanck_CGS*nu) / (phy_kBoltzmann_CGS*T)
   if (abs(tmp) .lt. TH) then
     planck_B_nu = 2D0*(nu/phy_SpeedOfLight_CGS)**2 * (phy_kBoltzmann_CGS*T)
