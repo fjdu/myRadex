@@ -8,7 +8,7 @@ logical :: flag_good
 integer, parameter :: n_item_column = 19
 
 character(len=64) :: &
-    About = 'Author: Fujun Du (fujun.du@gmail.com, fjdu@pmo.ac.cn)'
+    About = 'Author: Fujun Du (fjdu@pmo.ac.cn, fujun.du@gmail.com)'
 
 character(len=128) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
@@ -53,8 +53,52 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   !
   if (verbose) then
     write(*, '(A, A)') 'Molecule name: ', molecule_name
+    write(*, '(A, I10)') 'Number of levels: ', n_levels
+    write(*, '(A, I10)') 'Number of columns: ', n_item
+    write(*, '(A, I10)') 'Number of transitions: ', n_transitions
   end if
 end subroutine config_basic
+
+
+subroutine run_one_params_geometry( &
+    Tkin, dv_CGS, &
+    dens_X_CGS, Ncol_X_CGS, &
+    H2_density_CGS, HI_density_CGS, &
+    oH2_density_CGS, pH2_densty_CGS, &
+    HII_density_CGS, Electron_density_CGS, &
+    n_levels, n_item, n_transitions, &
+    geotype, &
+    energies, f_occupations, data_transitions, cooling_rate)
+  !
+  use my_radex
+  use statistic_equilibrium
+  !
+  double precision, intent(in) :: Tkin, dv_CGS, dens_X_CGS, Ncol_X_CGS, &
+    H2_density_CGS, HI_density_CGS, &
+    oH2_density_CGS, pH2_densty_CGS, &
+    HII_density_CGS, Electron_density_CGS
+  !
+  integer, intent(in) :: n_levels, n_item, n_transitions
+  character(len=16), intent(in) :: geotype
+  !
+  double precision, dimension(n_levels), intent(out) :: energies, f_occupations
+  double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
+  double precision, intent(out) :: cooling_rate
+  !
+  rdxx_cfg%geotype = adjustl(geotype)
+  if (rdxx_cfg%verbose) then
+    write(*,*) 'Using geotype:', rdxx_cfg%geotype
+  end if
+  !
+  call run_one_params( &
+    Tkin, dv_CGS, &
+    dens_X_CGS, Ncol_X_CGS, &
+    H2_density_CGS, HI_density_CGS, &
+    oH2_density_CGS, pH2_densty_CGS, &
+    HII_density_CGS, Electron_density_CGS, &
+    n_levels, n_item, n_transitions, &
+    energies, f_occupations, data_transitions, cooling_rate)
+end subroutine run_one_params_geometry
 
 
 subroutine run_one_params( &
@@ -158,6 +202,7 @@ subroutine run_one_params( &
   end do
   !
 end subroutine run_one_params
+
 
 
 end module myradex_wrapper
