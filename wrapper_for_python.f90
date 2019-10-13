@@ -60,47 +60,6 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
 end subroutine config_basic
 
 
-subroutine run_one_params_geometry( &
-    Tkin, dv_CGS, &
-    dens_X_CGS, Ncol_X_CGS, &
-    H2_density_CGS, HI_density_CGS, &
-    oH2_density_CGS, pH2_densty_CGS, &
-    HII_density_CGS, Electron_density_CGS, &
-    n_levels, n_item, n_transitions, &
-    geotype, &
-    energies, f_occupations, data_transitions, cooling_rate)
-  !
-  use my_radex
-  use statistic_equilibrium
-  !
-  double precision, intent(in) :: Tkin, dv_CGS, dens_X_CGS, Ncol_X_CGS, &
-    H2_density_CGS, HI_density_CGS, &
-    oH2_density_CGS, pH2_densty_CGS, &
-    HII_density_CGS, Electron_density_CGS
-  !
-  integer, intent(in) :: n_levels, n_item, n_transitions
-  character(len=16), intent(in) :: geotype
-  !
-  double precision, dimension(n_levels), intent(out) :: energies, f_occupations
-  double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
-  double precision, intent(out) :: cooling_rate
-  !
-  rdxx_cfg%geotype = adjustl(geotype)
-  if (rdxx_cfg%verbose) then
-    write(*,*) 'Using geotype:', rdxx_cfg%geotype
-  end if
-  !
-  call run_one_params( &
-    Tkin, dv_CGS, &
-    dens_X_CGS, Ncol_X_CGS, &
-    H2_density_CGS, HI_density_CGS, &
-    oH2_density_CGS, pH2_densty_CGS, &
-    HII_density_CGS, Electron_density_CGS, &
-    n_levels, n_item, n_transitions, &
-    energies, f_occupations, data_transitions, cooling_rate)
-end subroutine run_one_params_geometry
-
-
 subroutine run_one_params( &
     Tkin, dv_CGS, &
     dens_X_CGS, Ncol_X_CGS, &
@@ -123,6 +82,7 @@ subroutine run_one_params( &
   double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
   double precision, intent(out) :: cooling_rate
   !
+  type(type_rad_transition) r
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s
   double precision Inu_t, tau, t1, t2
   integer i
@@ -166,7 +126,8 @@ subroutine run_one_params( &
   rdxx_cfg%freqmax = 1D99
   !
   do i=1, n_transitions
-    associate(r => a_mol_using%rad_data%list(i))
+    !associate(r => a_mol_using%rad_data%list(i))
+      r = a_mol_using%rad_data%list(i)
       if ((r%freq .lt. rdxx_cfg%freqmin) .or. &
           (r%freq .gt. rdxx_cfg%freqmax)) then
         cycle
@@ -198,11 +159,50 @@ subroutine run_one_params( &
         dble(r%iup-1), dble(r%ilow-1), r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
         fup, flow, flux_K_km_s, flux_CGS, r%beta, &
         r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu /)
-    end associate
+    !end associate
   end do
-  !
 end subroutine run_one_params
 
+
+subroutine run_one_params_geometry( &
+    Tkin, dv_CGS, &
+    dens_X_CGS, Ncol_X_CGS, &
+    H2_density_CGS, HI_density_CGS, &
+    oH2_density_CGS, pH2_densty_CGS, &
+    HII_density_CGS, Electron_density_CGS, &
+    n_levels, n_item, n_transitions, &
+    geotype, &
+    energies, f_occupations, data_transitions, cooling_rate)
+  !
+  use my_radex
+  use statistic_equilibrium
+  !
+  double precision, intent(in) :: Tkin, dv_CGS, dens_X_CGS, Ncol_X_CGS, &
+    H2_density_CGS, HI_density_CGS, &
+    oH2_density_CGS, pH2_densty_CGS, &
+    HII_density_CGS, Electron_density_CGS
+  !
+  integer, intent(in) :: n_levels, n_item, n_transitions
+  character(len=16), intent(in) :: geotype
+  !
+  double precision, dimension(n_levels), intent(out) :: energies, f_occupations
+  double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
+  double precision, intent(out) :: cooling_rate
+  !
+  rdxx_cfg%geotype = adjustl(geotype)
+  if (rdxx_cfg%verbose) then
+    write(*,*) 'Using geotype:', rdxx_cfg%geotype
+  end if
+  !
+  call run_one_params( &
+    Tkin, dv_CGS, &
+    dens_X_CGS, Ncol_X_CGS, &
+    H2_density_CGS, HI_density_CGS, &
+    oH2_density_CGS, pH2_densty_CGS, &
+    HII_density_CGS, Electron_density_CGS, &
+    n_levels, n_item, n_transitions, &
+    energies, f_occupations, data_transitions, cooling_rate)
+end subroutine run_one_params_geometry
 
 
 end module myradex_wrapper
