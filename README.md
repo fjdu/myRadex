@@ -28,4 +28,4 @@ This code has not been thoroughly tested, and it is possible that some input fil
 
 **Note**
 
-It seems that the python wrapper only works with python 2.7, which might be related with the fact that `f2py` is [not well adapted to python 3](https://github.com/numpy/numpy/issues/4256).
+- Works with python 3.7
