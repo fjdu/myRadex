@@ -571,7 +571,11 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
       if (tt .le. const_small_tau) then
         beta = 1D0
         dbeta_dtau = -LVG_c * 0.5D0
-      else if ((tt .gt. const_small_tau) .and. (tt .le. 7D0)) then
+      else if ((tt .gt. const_small_tau) .and. (tt .le. 14D0)) then
+        ! In radex the threshold is set to 7.
+        ! However, 14 seems to be better for continuity.
+        ! This discrepancy with the original De Jong paper seems to stem from
+        ! tau is redefined to tau/2 here (as in radex).
         A = LVG_c * tau
         tmp = exp(-A)
         beta = (1D0 - tmp) / A
