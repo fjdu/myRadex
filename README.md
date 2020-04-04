@@ -1,3 +1,7 @@
+**Waht's new**
+
+- A function for calculating critical densities of all the transitions are included.
+
 This code solves essentially the same problem as
 [```RADEX```](http://home.strw.leidenuniv.nl/~moldata/radex.html) written by
 Van der Tak, except that we take a different approach to solve the statistical
@@ -24,7 +28,7 @@ functionalities in the ```Fortran``` source code are included in the wrapper
 
 We use the [LAMDA](http://home.strw.leidenuniv.nl/~moldata/molecules.html) format for the input energy levels and transition rates.
 
-This code has not been thoroughly tested, and it is possible that some input files won't load properly.
+This code has not been thoroughly tested, and it is possible that some input files won't load properly.  Usually one can work around the problem by changing the input file to the format of a file that is known to work.
 
 **Note**
 
