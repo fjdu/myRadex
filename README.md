@@ -1,6 +1,8 @@
-**Waht's new**
+**What's new**
 
-- A function for calculating critical densities of all the transitions are included.
+- A function for calculating critical densities of all the transitions of a molecule is included.
+
+---
 
 This code solves essentially the same problem as
 [```RADEX```](http://home.strw.leidenuniv.nl/~moldata/radex.html) written by
