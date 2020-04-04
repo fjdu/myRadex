@@ -63,14 +63,14 @@
   rdxx_cfg%n_x                  = 1D0 ! Does not matter when there is no continuum opacity.
   !
   ! Density of collisional partners
-  rdxx_cfg%ndens                = 1  ! Too many of them, so vary them (if needed) altogether.
-  rdxx_cfg%n_H2                 = 1e7 ! cm-3, total H atom density
-  rdxx_cfg%n_HI                 = 0D0
-  rdxx_cfg%n_oH2                = 0D0 ! If zero, calculate from n_H2 assuming 3:1.
-  rdxx_cfg%n_pH2                = 0D0
-  rdxx_cfg%n_Hplus              = 0D0
-  rdxx_cfg%n_E                  = 0D0
-  rdxx_cfg%n_He                 = 0D0
+  rdxx_cfg%ndens                = 5  ! Too many of them, so vary them (if needed) altogether.
+  rdxx_cfg%n_H2                 = 1e3 1e5 1e6 1e8 1e12 ! cm-3, total H atom density
+  rdxx_cfg%n_HI                 = 0e3 0D0 0e6 0e8 0e12
+  rdxx_cfg%n_oH2                = 0e3 0D0 0e6 0e8 0e12 ! If zero, calculate from n_H2 assuming 3:1.
+  rdxx_cfg%n_pH2                = 0e3 0D0 0e6 0e8 0e12
+  rdxx_cfg%n_Hplus              = 0e3 0D0 0e6 0e8 0e12
+  rdxx_cfg%n_E                  = 0e3 0D0 0e6 0e8 0e12
+  rdxx_cfg%n_He                 = 0e3 0D0 0e6 0e8 0e12
   !
   ! The remaining params are not looped over.
   !
@@ -93,8 +93,8 @@
   !rdxx_cfg%length_scale         = 1D18 ! cm
   !
   rdxx_cfg%max_code_run_time    = 15.0 ! Max acceptable code run time (for a single param set) in seconds
-  rdxx_cfg%max_evol_time        = 1D7 ! Physical evol time in seconds
-  rdxx_cfg%rtol                 = 1d-3  ! Relative tolerance for the ode solver
+  rdxx_cfg%max_evol_time        = 1D9 ! Physical evol time in seconds
+  rdxx_cfg%rtol                 = 1d-4  ! Relative tolerance for the ode solver
   rdxx_cfg%atol                 = 1d-20 ! Absolute tolerance for the ode solver
   rdxx_cfg%verbose              = .true. ! Whether to print out the running messages.
 /

@@ -24,12 +24,12 @@ contains
 subroutine config_basic(dir_transition_rates, filename_molecule, &
     Tbg, &
     verbose, &
-    n_levels, n_item, n_transitions)
+    n_levels, n_item, n_transitions, n_partners)
   use my_radex
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
   double precision, intent(in) :: Tbg
   logical, intent(in) :: verbose
-  integer, intent(out) :: n_levels, n_item, n_transitions
+  integer, intent(out) :: n_levels, n_item, n_transitions, n_partners
   !
   rdxx_cfg%dir_transition_rates = dir_transition_rates
   rdxx_cfg%filename_molecule = filename_molecule
@@ -50,6 +50,7 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   n_item = n_item_column
   n_transitions = a_mol_using%rad_data%n_transition
   molecule_name = a_mol_using%name_molecule
+  n_partners = a_mol_using%colli_data%n_partner
   !
   if (verbose) then
     write(*, '(A, A)') 'Molecule name: ', molecule_name
@@ -203,6 +204,27 @@ subroutine run_one_params_geometry( &
     n_levels, n_item, n_transitions, &
     energies, f_occupations, data_transitions, cooling_rate)
 end subroutine run_one_params_geometry
+
+
+subroutine calc_critical_density(tau, n_partner, n_transitions, &
+    critical_densities, iup, ilow)
+  use statistic_equilibrium
+  double precision, intent(in) :: tau
+  integer, intent(in) :: n_partner, n_transitions
+  double precision, dimension(n_partner,n_transitions), intent(out) :: critical_densities
+  integer, dimension(n_transitions), intent(out) :: iup, ilow
+  integer ipt, itr
+  call calc_critical_density_f(tau)
+  do ipt=1, n_partner
+    do itr=1, n_transitions
+      critical_densities(ipt, itr) = a_mol_using%rad_data%list(itr)%critical_densities(ipt)
+    end do
+  end do
+  do itr=1, n_transitions
+    iup(itr) = a_mol_using%rad_data%list(itr)%iup
+    ilow(itr) = a_mol_using%rad_data%list(itr)%ilow
+  end do
+end subroutine calc_critical_density
 
 
 end module myradex_wrapper
