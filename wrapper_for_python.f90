@@ -227,4 +227,25 @@ subroutine calc_critical_density(tau, n_partner, n_transitions, &
 end subroutine calc_critical_density
 
 
+
+subroutine calc_critical_density_old_def(tau, n_partner, n_transitions, &
+    critical_densities, iup, ilow)
+  use statistic_equilibrium
+  double precision, intent(in) :: tau
+  integer, intent(in) :: n_partner, n_transitions
+  double precision, dimension(n_partner,n_transitions), intent(out) :: critical_densities
+  integer, dimension(n_transitions), intent(out) :: iup, ilow
+  integer ipt, itr
+  call calc_critical_density_old_def_f(tau)
+  do ipt=1, n_partner
+    do itr=1, n_transitions
+      critical_densities(ipt, itr) = a_mol_using%rad_data%list(itr)%critical_densities(ipt)
+    end do
+  end do
+  do itr=1, n_transitions
+    iup(itr) = a_mol_using%rad_data%list(itr)%iup
+    ilow(itr) = a_mol_using%rad_data%list(itr)%ilow
+  end do
+end subroutine calc_critical_density_old_def
+
 end module myradex_wrapper
