@@ -32,6 +32,8 @@ type :: type_rdxx_cfg
   character(len=128) :: dir_save = './'
   character(len=128) :: filename_molecule = '12C16O_H2.dat'
   character(len=128) :: filename_save = 'output.dat'
+  logical :: recalculateFreqWithEupElow = .false.
+  logical :: iLevel_subtract_one = .false.
   logical :: verbose = .true.
   !
   double precision :: freqmin=0D0, freqmax=1D99
@@ -89,7 +91,7 @@ contains
 subroutine do_my_radex(do_init)
   logical, intent(in), optional :: do_init
   logical do_ini
-  integer i, itot, ntot
+  integer i, itot, ntot, ilowSav, iupSav
   integer iTkin, idv, in_x, iNcol_x, idens
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s, flux_Jy
   double precision Inu_t, tau, t1, t2
@@ -215,9 +217,18 @@ subroutine do_my_radex(do_init)
           a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS * (4D0 * phy_Pi * phy_GaussFWHM_c)
         beam_area = FWHM_to_area(rdxx_cfg%beam_FWHM_in_arcsec)
         flux_Jy = (Inu_t - r%J_cont_bg) * beam_area / phy_jansky2CGS
+        !
+        ilowSav = r%ilow
+        iupSav = r%iup
+        if (rdxx_cfg%iLevel_subtract_one) then
+          ! Some people may want the level numbers be subtracted by one.
+          ilowSav = r%ilow - 1
+          iupSav = r%iup - 1
+        end if
+        !
         write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7E2, 10ES12.3E3, 2F7.1, &
                   &3ES12.3E3, I2)') &
-          r%iup-1, r%ilow-1, r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
+          iupSav, ilowSav, r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
           fup, flow, flux_K_km_s, flux_CGS, flux_Jy, r%beta, &
           r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, flag_good
       end associate
@@ -369,7 +380,7 @@ subroutine my_radex_prepare
   ! Load the molecular data
   call load_moldata_LAMBDA(&
     combine_dir_filename(rdxx_cfg%dir_transition_rates, &
-    rdxx_cfg%filename_molecule))
+    rdxx_cfg%filename_molecule), rdxx_cfg%recalculateFreqWithEupElow)
   !
   if (rdxx_cfg%verbose) then
     write(*, '(A, I5)') 'Number of levels: ', a_mol_using%n_level

@@ -153,8 +153,10 @@ subroutine calc_cooling_rate
 end subroutine calc_cooling_rate
 
 
-subroutine load_moldata_LAMBDA(filename)
+subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   character(len=*) filename
+  logical, intent(in), optional :: recalculateFreqWithEupElow
+  logical recalcFreq
   character(len=512) strtmp
   integer, parameter :: nstr_split = 64
   character(len=32), dimension(nstr_split) :: str_split
@@ -163,11 +165,16 @@ subroutine load_moldata_LAMBDA(filename)
   character(len=8), parameter :: strfmt_float = '(F16.3)'
   character(len=8), parameter :: strfmt_int = '(I6)'
   character(len=8), parameter :: strfmt_int_long = '(I64)'
-  !double precision, parameter :: freq_conv_factor = 1D9
+  double precision, parameter :: GHz_to_Hz = 1D9
   !
   integer iup, ilow
   !
   integer n_T_, n_transition_
+  !
+  recalcFreq = .false.
+  if (present(recalculateFreqWithEupElow)) then
+    recalcFreq = recalculateFreqWithEupElow
+  end if
   !
   if (.not. getFileUnit(fU)) then
     write(*,*) 'Cannot get a free file unit.  In load_moldata_LAMBDA.'
@@ -208,27 +215,30 @@ subroutine load_moldata_LAMBDA(filename)
     read(str_split(2), strfmt_int) a_mol_using%rad_data%list(i)%iup
     read(str_split(3), strfmt_int) a_mol_using%rad_data%list(i)%ilow
     read(str_split(4), strfmt_float) a_mol_using%rad_data%list(i)%Aul
-    !read(str_split(5), strfmt_float) a_mol_using%rad_data%list(i)%freq
+    read(str_split(5), strfmt_float) a_mol_using%rad_data%list(i)%freq
     !read(str_split(6), strfmt_float) a_mol_using%rad_data%list(i)%Eup
     !
-    ! The frequency in the table may be incorrect, so here I recompute from the
-    ! energy difference.  The result is in Hz.
     iup  = a_mol_using%rad_data%list(i)%iup
     ilow = a_mol_using%rad_data%list(i)%ilow
     !
-    a_mol_using%rad_data%list(i)%freq = phy_SpeedOfLight_CGS * &
-      (a_mol_using%level_list(iup)%energy - &
-       a_mol_using%level_list(ilow)%energy)
-    !
+    if (recalcFreq) then
+      ! The frequencies in the LAMDA data file may be inconsistent with the energy levels,
+      ! so here I recompute them using the energy differences.  The results are in Hz.
+      ! However, note that the energy levels in the LAMDA data file may not be accurate,
+      ! so by default this recalculation is NOT done.
+      a_mol_using%rad_data%list(i)%freq = phy_SpeedOfLight_CGS * &
+        (a_mol_using%level_list(iup)%energy - &
+         a_mol_using%level_list(ilow)%energy)
+    else
+      ! The frequency unit in the LAMDA file is in GHz. Now convert to Hz.
+      a_mol_using%rad_data%list(i)%freq = a_mol_using%rad_data%list(i)%freq * GHz_to_Hz
+    end if
     a_mol_using%rad_data%list(i)%Eup  = a_mol_using%level_list(iup)%energy * phy_cm_1_2K
     a_mol_using%rad_data%list(i)%Elow = a_mol_using%level_list(ilow)%energy * phy_cm_1_2K
   end do
   !
   ! Convert the energy unit into Kelvin from cm-1
   a_mol_using%level_list%energy = a_mol_using%level_list%energy * phy_cm_1_2K
-  !
-  !!! Now frequency in Hz.
-  !!a_mol_using%rad_data%list%freq = a_mol_using%rad_data%list%freq * freq_conv_factor
   !
   ! Lambda in micron
   a_mol_using%rad_data%list%lambda = phy_SpeedOfLight_SI/a_mol_using%rad_data%list%freq*1D6

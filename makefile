@@ -36,13 +36,13 @@ my_radex.o: my_radex.f90 sub_trivials.o sub_global_variables.o statistic_equilib
 	$(cpl) $(cflags) my_radex.f90
 
 opkda1.o:  opkda1.f
-	$(cpl) $(cflags) opkda1.f
+	$(cpl) $(cflags) -fallow-argument-mismatch opkda1.f
 
 opkda2.o:  opkda2.f
-	$(cpl) $(cflags) opkda2.f
+	$(cpl) $(cflags) -fallow-argument-mismatch opkda2.f
 
 opkdmain.o: opkdmain.f opkda1.o opkda2.o
-	$(cpl) $(cflags) opkdmain.f
+	$(cpl) $(cflags) -fallow-argument-mismatch opkdmain.f
 
 statistic_equilibrium.o: statistic_equilibrium.f90 sub_trivials.o sub_global_variables.o nleq1.o linalg_nleq1.o
 	$(cpl) $(cflags) statistic_equilibrium.f90

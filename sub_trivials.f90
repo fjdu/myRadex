@@ -404,13 +404,6 @@ end do
 end function CharCountsInStr
 
 
-!  Get a double precision NaN.
-function dblNaN ()
-double precision dblNaN
-dblNan = transfer(X'FFFFFFFFFFFFFFFF', 0D0)
-end function dblNaN
-
-
 subroutine write_no_advance(str)
   character(len=*) str
   character(len=*), parameter :: pre = char(27)//'[A'

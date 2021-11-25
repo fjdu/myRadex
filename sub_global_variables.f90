@@ -38,7 +38,6 @@ module phy_const
   double precision, parameter :: phy_Pi_2 = 1.57079632679489661923132D0
   double precision, parameter :: phy_2Pi = 6.283185307179586476925D0
   double precision, parameter :: phy_sqrt2Pi = 2.5066282746310005024D0
-  double precision, parameter :: phy_NaN = transfer(X'FFFFFFFFFFFFFFFF', 0D0)
   double precision, parameter :: phy_GaussFWHM_c = sqrt(phy_Pi/4D0/log(2D0))
   !
   double precision, parameter :: phy_elementaryCharge_SI = 1.602176487D-19

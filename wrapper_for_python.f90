@@ -24,12 +24,21 @@ contains
 subroutine config_basic(dir_transition_rates, filename_molecule, &
     Tbg, &
     verbose, &
+    recalculateFreqWithEupElow, iLevel_subtract_one, &
     n_levels, n_item, n_transitions, n_partners)
   use my_radex
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
   double precision, intent(in) :: Tbg
   logical, intent(in) :: verbose
+  logical, intent(in), optional :: recalculateFreqWithEupElow, iLevel_subtract_one
   integer, intent(out) :: n_levels, n_item, n_transitions, n_partners
+  !
+  if (present(recalculateFreqWithEupElow)) then
+    rdxx_cfg%recalculateFreqWithEupElow = recalculateFreqWithEupElow
+  end if
+  if (present(iLevel_subtract_one)) then
+    rdxx_cfg%iLevel_subtract_one = iLevel_subtract_one
+  end if
   !
   rdxx_cfg%dir_transition_rates = dir_transition_rates
   rdxx_cfg%filename_molecule = filename_molecule
@@ -86,7 +95,7 @@ subroutine run_one_params( &
   type(type_rad_transition) r
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s
   double precision Inu_t, tau, t1, t2
-  integer i
+  integer i, iupSav, ilowSav
   !
   rdxx_cfg%nTkin   = 1
   rdxx_cfg%ndv     = 1
@@ -155,9 +164,15 @@ subroutine run_one_params( &
       flux_CGS = (Inu_t - r%J_cont_bg) * &
         a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
       !
+      iupSav = r%iup
+      ilowSav = r%ilow
+      if (rdxx_cfg%iLevel_subtract_one) then
+        iupSav = r%iup - 1
+        ilowSav = r%ilow - 1
+      end if
       data_transitions(:, i) = &
         (/ &
-        dble(r%iup-1), dble(r%ilow-1), r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
+        dble(iupSav), dble(ilowSav), r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
         fup, flow, flux_K_km_s, flux_CGS, r%beta, &
         r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu /)
     !end associate
