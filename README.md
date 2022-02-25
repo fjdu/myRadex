@@ -1,6 +1,6 @@
 **What's new**
 
-- 2021-11-25: Instead of being calculated from the energy levels, now the frequencies in the input file will be used by default.  Also the energy level numbers will not subtracted by 1 by default.  For backward compatibility, two Boolean options are added: `recalculateFreqWithEupElow` and `iLevel_subtract_one` (both are `False` by default).
+- 2021-11-25: Instead of being calculated from the energy levels, now the frequencies in the input file will be used by default.  Also the energy level numbers will not be subtracted by 1 by default.  For backward compatibility, two Boolean options are added: `recalculateFreqWithEupElow` and `iLevel_subtract_one` (both are `False` by default).
 - 2020-04-05: A function for calculating critical densities of all the transitions of a molecule is included.
 
 ---
