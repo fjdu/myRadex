@@ -1,5 +1,7 @@
 **What's new**
 
+- 2022-06-06: `myRadex` is now included in the Astrophysics Source Code Library as ["myRadex: Radex with a twist"](https://ascl.net/2205.011).
+
 - 2021-11-25: Instead of being calculated from the energy levels, now the frequencies in the input file will be used by default.  Also the energy level numbers will not be subtracted by 1 by default.  For backward compatibility, two Boolean options are added: `recalculateFreqWithEupElow` and `iLevel_subtract_one` (both are `False` by default).
 - 2020-04-05: A function for calculating critical densities of all the transitions of a molecule is included.
 

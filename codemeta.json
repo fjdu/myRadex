@@ -1,0 +1,24 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "name": "myRadex: Radex with a twist",
+    "description": "myRadex solves essentially the same problem as RADEX (ascl:1010.075), except that it takes a different approach to solve the statistical equilibrium problem. Given an initial distribution, myRadex evolves the system towards equilibrium using an ODE solver.  A function for calculating critical densities of all the transitions of a molecule is included for convenience.",
+    "identifier": "ascl:2205.011",
+    "author": [
+        {
+            "@type": "Person",
+            "givenName": "Fujun",
+            "familyName": "Du",
+            "@id": "https://orcid.org/0000-0002-7489-0179"
+        }
+    ],
+    "citation": "https://ui.adsabs.harvard.edu/abs/2022ascl.soft05011D",
+    "relatedLink": [
+        "PLACEHOLDER: Add related links (if any) here"
+    ],
+    "codeRepository": [
+        "https://github.com/fjdu/myRadex"
+    ],
+    "version": "PLACEHOLDER: Add version here",
+    "license": "https://creativecommons.org/licenses/"
+}
