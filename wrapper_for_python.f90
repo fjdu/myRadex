@@ -5,7 +5,7 @@ implicit none
 
 logical :: flag_good
 
-integer, parameter :: n_item_column = 19
+integer, parameter :: n_item_column = 21
 
 character(len=64) :: &
     About = 'Author: Fujun Du (fjdu@pmo.ac.cn, fujun.du@gmail.com)'
@@ -13,8 +13,8 @@ character(len=64) :: &
 character(len=128) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
     // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// &
-    'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux_int' // 'flux_Jy' //' '// 'beta' //' ' &
-    // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu'
+    'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux_int' // ' ' // 'flux_Jy' //' '// 'beta' //' ' &
+    // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu' // ' ' // 'n_crit' // ' ' // 'n_crit_old'
 
 character(len=32) :: molecule_name = ''
 
@@ -49,7 +49,6 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   rdxx_cfg%verbose = verbose
   !
   if (verbose) then
-    write(*, '(A, A)') 'About this tool: ', About
     write(*, '(A, A)') 'Column names of the output: ', column_names
   end if
   !
@@ -77,6 +76,7 @@ subroutine run_one_params( &
     oH2_density_CGS, pH2_densty_CGS, &
     HII_density_CGS, Electron_density_CGS, &
     n_levels, n_item, n_transitions, &
+    donotsolve, &
     energies, f_occupations, data_transitions, cooling_rate)
   !
   use my_radex
@@ -88,6 +88,7 @@ subroutine run_one_params( &
     HII_density_CGS, Electron_density_CGS
   !
   integer, intent(in) :: n_levels, n_item, n_transitions
+  logical, intent(in), optional :: donotsolve
   double precision, dimension(n_levels), intent(out) :: energies, f_occupations
   double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
   double precision, intent(out) :: cooling_rate
@@ -95,7 +96,9 @@ subroutine run_one_params( &
   type(type_rad_transition) r
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s
   double precision Inu_t, tau, t1, t2
+  double precision critical_density, critical_density_old
   integer i, iupSav, ilowSav
+  logical donotsolve_
   !
   rdxx_cfg%nTkin   = 1
   rdxx_cfg%ndv     = 1
@@ -120,9 +123,17 @@ subroutine run_one_params( &
   rdxx_cfg%n_pH2(1) = pH2_densty_CGS
   rdxx_cfg%n_Hplus(1) = HII_density_CGS
   rdxx_cfg%n_E(1) = Electron_density_CGS
+
+  if (present(donotsolve)) then
+    donotsolve_ = donotsolve
+  else
+    donotsolve_ = .false.
+  end if
   !
   call my_radex_prepare_molecule
-  call statistic_equil_solve
+  if (.not. donotsolve_) then
+    call statistic_equil_solve
+  end if
   call calc_cooling_rate
   !
   flag_good = statistic_equil_params%is_good
@@ -136,7 +147,6 @@ subroutine run_one_params( &
   rdxx_cfg%freqmax = 1D99
   !
   do i=1, n_transitions
-    !associate(r => a_mol_using%rad_data%list(i))
       r = a_mol_using%rad_data%list(i)
       if ((r%freq .lt. rdxx_cfg%freqmin) .or. &
           (r%freq .gt. rdxx_cfg%freqmax)) then
@@ -170,12 +180,17 @@ subroutine run_one_params( &
         iupSav = r%iup - 1
         ilowSav = r%ilow - 1
       end if
+      !
+      call calc_critical_density_for_one_transition(i, tau)
+      critical_density = a_mol_using%rad_data%list(i)%critical_densities(1)
+      call calc_critical_density_old_def_for_one_transition(i, tau)
+      critical_density_old = a_mol_using%rad_data%list(i)%critical_densities(1)
+      !
       data_transitions(:, i) = &
         (/ &
         dble(iupSav), dble(ilowSav), r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
         fup, flow, flux_K_km_s, flux_CGS, r%beta, &
-        r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu /)
-    !end associate
+        r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, critical_density, critical_density_old /)
   end do
 end subroutine run_one_params
 
@@ -216,7 +231,7 @@ subroutine run_one_params_geometry( &
     H2_density_CGS, HI_density_CGS, &
     oH2_density_CGS, pH2_densty_CGS, &
     HII_density_CGS, Electron_density_CGS, &
-    n_levels, n_item, n_transitions, &
+    n_levels, n_item, n_transitions, .false., &
     energies, f_occupations, data_transitions, cooling_rate)
 end subroutine run_one_params_geometry
 

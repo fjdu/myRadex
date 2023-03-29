@@ -82,7 +82,7 @@ type :: type_statistic_equil_params
   integer nitem
   double precision :: RTOL = 1D-4, ATOL = 1D-20
   double precision :: t_max = 1D6, dt_first_step = 1D-4, ratio_tstep = 1.1D0
-  real :: max_runtime_allowed = 5.0
+  real :: max_runtime_allowed = 10.0
   integer n_record
   integer :: &
         NERR, &
@@ -424,9 +424,8 @@ subroutine statistic_equil_solve
     tout = t + t_step
   end do
   !
-  if ((t .lt. statistic_equil_params%t_max * 0.3D0) .or. &
-      (3*statistic_equil_params%NERR .gt. statistic_equil_params%n_record)) then
-    write(*, '(/A)') 'Error occurred:'
+  if (3*statistic_equil_params%NERR .gt. statistic_equil_params%n_record) then
+    write(*, '(/A)') 'Errors occurred:'
     write(*, '(2ES12.4, 2I6, /)') t, statistic_equil_params%t_max, &
       statistic_equil_params%NERR, statistic_equil_params%n_record
     statistic_equil_params%is_good = .false.
@@ -891,12 +890,14 @@ end subroutine stat_equili_ode_jac
 
 
 
-subroutine calc_critical_density_f(tau)
+subroutine calc_critical_density_for_one_transition(iTran, tau)
   use statistic_equilibrium
   use phy_const
   implicit none
+  integer, intent(in) :: iTran
   double precision, intent(in) :: tau
-  integer i, irt, icp, ict, itmp, iup_rad, ilow_rad, iup_col, ilow_col, iL, iR
+  !
+  integer i, icp, ict, itmp, iup_rad, ilow_rad, iup_col, ilow_col, iL, iR
   double precision nu, J_ave, Tkin, Cul, Clu, TL, TR, deltaE, &
     del_nu, alpha, beta, dbeta_dtau
   double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
@@ -904,68 +905,164 @@ subroutine calc_critical_density_f(tau)
   double precision radiative_transfer_rate_from_iup_to_ilow
   double precision collisional_transfer_rate_from_iup_to_others
   Tkin = a_mol_using%Tkin
-  do irt=1, a_mol_using%rad_data%n_transition
-    iup_rad = a_mol_using%rad_data%list(irt)%iup
-    ilow_rad = a_mol_using%rad_data%list(irt)%ilow
-    nu = a_mol_using%rad_data%list(irt)%freq
-    lambda = a_mol_using%rad_data%list(irt)%lambda
-    !
-    call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
-    !
-    radiative_transfer_rate_from_iup_to_ilow = a_mol_using%rad_data%list(irt)%Aul * beta
-    !
-    do icp=1, a_mol_using%colli_data%n_partner
-      ! Find the T interval
-      itmp = a_mol_using%colli_data%list(icp)%n_T
-      if (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(1)) then
-        iL = 1
-        iR = 1
-      else if (Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(itmp)) then
-        iL = itmp
-        iR = itmp
-      else
-        do i=2, a_mol_using%colli_data%list(icp)%n_T
-          if ((Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(i-1)) .and. &
-              (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(i))) then
-            iL = i-1
-            iR = i
-            exit
-          end if
-        end do
-      end if
-      collisional_transfer_rate_from_iup_to_others = 0D0
-      do ict=1, a_mol_using%colli_data%list(icp)%n_transition
-        iup_col = a_mol_using%colli_data%list(icp)%iup(ict)
-        ilow_col = a_mol_using%colli_data%list(icp)%ilow(ict)
-        if ((iup_col .ne. iup_rad) .and. (ilow_col .ne. iup_rad)) then
-          cycle
-        end if
-        deltaE = a_mol_using%level_list(iup_col)%energy - a_mol_using%level_list(ilow_col)%energy
-        if (iL .eq. iR) then
-          Cul = a_mol_using%colli_data%list(icp)%Cul(iL, ict)
-        else
-          TL = a_mol_using%colli_data%list(icp)%T_coll(iL)
-          TR = a_mol_using%colli_data%list(icp)%T_coll(iR)
-          Cul = (a_mol_using%colli_data%list(icp)%Cul(iL, ict) * (TR - Tkin) + &
-                  a_mol_using%colli_data%list(icp)%Cul(iR, ict) * (Tkin - TL)) / (TR - TL)
-        end if
-        Clu = Cul * exp(-deltaE/Tkin) * &
-               a_mol_using%level_list(iup_col)%weight / &
-               a_mol_using%level_list(ilow_col)%weight
-        if (iup_col .eq. iup_rad) then
-          collisional_transfer_rate_from_iup_to_others = &
-            collisional_transfer_rate_from_iup_to_others + Cul
-        else if (ilow_col .eq. iup_rad) then
-          collisional_transfer_rate_from_iup_to_others = &
-            collisional_transfer_rate_from_iup_to_others + Clu
-        else
-          write(*,*) "Something is wrong in calc_critical_density_f!"
+  iup_rad = a_mol_using%rad_data%list(iTran)%iup
+  ilow_rad = a_mol_using%rad_data%list(iTran)%ilow
+  nu = a_mol_using%rad_data%list(iTran)%freq
+  lambda = a_mol_using%rad_data%list(iTran)%lambda
+  !
+  call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
+  !
+  radiative_transfer_rate_from_iup_to_ilow = a_mol_using%rad_data%list(iTran)%Aul * beta
+  !
+  do icp=1, a_mol_using%colli_data%n_partner
+    ! Find the T interval for interpolation
+    itmp = a_mol_using%colli_data%list(icp)%n_T
+    if (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(1)) then
+      iL = 1
+      iR = 1
+    else if (Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(itmp)) then
+      iL = itmp
+      iR = itmp
+    else
+      do i=2, a_mol_using%colli_data%list(icp)%n_T
+        if ((Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(i-1)) .and. &
+            (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(i))) then
+          iL = i-1
+          iR = i
+          exit
         end if
       end do
-      a_mol_using%rad_data%list(irt)%critical_densities(icp) = &
-        radiative_transfer_rate_from_iup_to_ilow / &
-        (collisional_transfer_rate_from_iup_to_others + 1d-200)
+    end if
+    !
+    collisional_transfer_rate_from_iup_to_others = 0D0
+    do ict=1, a_mol_using%colli_data%list(icp)%n_transition
+      iup_col = a_mol_using%colli_data%list(icp)%iup(ict)
+      ilow_col = a_mol_using%colli_data%list(icp)%ilow(ict)
+      if ((iup_col .ne. iup_rad) .and. (ilow_col .ne. iup_rad)) then
+        cycle
+      end if
+      deltaE = a_mol_using%level_list(iup_col)%energy - a_mol_using%level_list(ilow_col)%energy
+      ! Do the interpolation
+      if (iL .eq. iR) then
+        Cul = a_mol_using%colli_data%list(icp)%Cul(iL, ict)
+      else
+        TL = a_mol_using%colli_data%list(icp)%T_coll(iL)
+        TR = a_mol_using%colli_data%list(icp)%T_coll(iR)
+        Cul = (a_mol_using%colli_data%list(icp)%Cul(iL, ict) * (TR - Tkin) + &
+                a_mol_using%colli_data%list(icp)%Cul(iR, ict) * (Tkin - TL)) / (TR - TL)
+      end if
+      !
+      Clu = Cul * exp(-deltaE/Tkin) * &
+             a_mol_using%level_list(iup_col)%weight / &
+             a_mol_using%level_list(ilow_col)%weight
+      if (iup_col .eq. iup_rad) then
+        collisional_transfer_rate_from_iup_to_others = &
+          collisional_transfer_rate_from_iup_to_others + Cul
+      else if (ilow_col .eq. iup_rad) then
+        collisional_transfer_rate_from_iup_to_others = &
+          collisional_transfer_rate_from_iup_to_others + Clu
+      else
+        write(*,*) "Something is wrong in calc_critical_density_for_one_transition!"
+      end if
     end do
+    a_mol_using%rad_data%list(iTran)%critical_densities(icp) = &
+      radiative_transfer_rate_from_iup_to_ilow / &
+      (collisional_transfer_rate_from_iup_to_others + 1d-200)
+  end do
+end subroutine calc_critical_density_for_one_transition
+
+
+
+
+
+subroutine calc_critical_density_old_def_for_one_transition(iTran, tau)
+  use statistic_equilibrium
+  use phy_const
+  implicit none
+  integer, intent(in) :: iTran
+  double precision, intent(in) :: tau
+  integer i, icp, ict, itmp, iup_rad, ilow_rad, iup_col, ilow_col, iL, iR
+  double precision nu, J_ave, Tkin, Cul, Clu, TL, TR, deltaE, &
+    del_nu, alpha, beta, dbeta_dtau
+  double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
+  double precision jnu, knu
+  double precision radiative_transfer_rate_from_iup_to_ilow
+  double precision collisional_transfer_rate_from_iup_to_others
+  Tkin = a_mol_using%Tkin
+  iup_rad = a_mol_using%rad_data%list(iTran)%iup
+  ilow_rad = a_mol_using%rad_data%list(iTran)%ilow
+  nu = a_mol_using%rad_data%list(iTran)%freq
+  lambda = a_mol_using%rad_data%list(iTran)%lambda
+  !
+  call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
+  !
+  radiative_transfer_rate_from_iup_to_ilow = a_mol_using%rad_data%list(iTran)%Aul * beta
+  !
+  do icp=1, a_mol_using%colli_data%n_partner
+    ! Find the T interval for interpolation
+    itmp = a_mol_using%colli_data%list(icp)%n_T
+    if (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(1)) then
+      iL = 1
+      iR = 1
+    else if (Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(itmp)) then
+      iL = itmp
+      iR = itmp
+    else
+      do i=2, a_mol_using%colli_data%list(icp)%n_T
+        if ((Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(i-1)) .and. &
+            (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(i))) then
+          iL = i-1
+          iR = i
+          exit
+        end if
+      end do
+    end if
+    collisional_transfer_rate_from_iup_to_others = 0D0
+    do ict=1, a_mol_using%colli_data%list(icp)%n_transition
+      iup_col = a_mol_using%colli_data%list(icp)%iup(ict)
+      ilow_col = a_mol_using%colli_data%list(icp)%ilow(ict)
+      if ((iup_col .ne. iup_rad) .or. (ilow_col .ne. ilow_rad)) then
+        ! This makes the difference with calc_critical_density_f
+        cycle
+      end if
+      deltaE = a_mol_using%level_list(iup_col)%energy - a_mol_using%level_list(ilow_col)%energy
+      if (iL .eq. iR) then
+        Cul = a_mol_using%colli_data%list(icp)%Cul(iL, ict)
+      else
+        TL = a_mol_using%colli_data%list(icp)%T_coll(iL)
+        TR = a_mol_using%colli_data%list(icp)%T_coll(iR)
+        Cul = (a_mol_using%colli_data%list(icp)%Cul(iL, ict) * (TR - Tkin) + &
+                a_mol_using%colli_data%list(icp)%Cul(iR, ict) * (Tkin - TL)) / (TR - TL)
+      end if
+      Clu = Cul * exp(-deltaE/Tkin) * &
+             a_mol_using%level_list(iup_col)%weight / &
+             a_mol_using%level_list(ilow_col)%weight
+      if (iup_col .eq. iup_rad) then
+        collisional_transfer_rate_from_iup_to_others = &
+          collisional_transfer_rate_from_iup_to_others + Cul
+      else if (ilow_col .eq. iup_rad) then
+        collisional_transfer_rate_from_iup_to_others = &
+          collisional_transfer_rate_from_iup_to_others + Clu
+      else
+        write(*,*) "Something is wrong in calc_critical_density_old_def_for_one_transition!"
+      end if
+    end do
+    a_mol_using%rad_data%list(iTran)%critical_densities(icp) = &
+      radiative_transfer_rate_from_iup_to_ilow / &
+      (collisional_transfer_rate_from_iup_to_others + 1d-200)
+  end do
+end subroutine calc_critical_density_old_def_for_one_transition
+
+
+
+subroutine calc_critical_density_f(tau)
+  use statistic_equilibrium
+  use phy_const
+  implicit none
+  double precision, intent(in) :: tau
+  integer irt
+  do irt=1, a_mol_using%rad_data%n_transition
+    call calc_critical_density_for_one_transition(irt, tau)
   end do
 end subroutine calc_critical_density_f
 
@@ -976,76 +1073,8 @@ subroutine calc_critical_density_old_def_f(tau)
   use phy_const
   implicit none
   double precision, intent(in) :: tau
-  integer i, irt, icp, ict, itmp, iup_rad, ilow_rad, iup_col, ilow_col, iL, iR
-  double precision nu, J_ave, Tkin, Cul, Clu, TL, TR, deltaE, &
-    del_nu, alpha, beta, dbeta_dtau
-  double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
-  double precision jnu, knu
-  double precision radiative_transfer_rate_from_iup_to_ilow
-  double precision collisional_transfer_rate_from_iup_to_others
-  Tkin = a_mol_using%Tkin
+  integer irt
   do irt=1, a_mol_using%rad_data%n_transition
-    iup_rad = a_mol_using%rad_data%list(irt)%iup
-    ilow_rad = a_mol_using%rad_data%list(irt)%ilow
-    nu = a_mol_using%rad_data%list(irt)%freq
-    lambda = a_mol_using%rad_data%list(irt)%lambda
-    !
-    call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
-    !
-    radiative_transfer_rate_from_iup_to_ilow = a_mol_using%rad_data%list(irt)%Aul * beta
-    !
-    do icp=1, a_mol_using%colli_data%n_partner
-      ! Find the T interval
-      itmp = a_mol_using%colli_data%list(icp)%n_T
-      if (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(1)) then
-        iL = 1
-        iR = 1
-      else if (Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(itmp)) then
-        iL = itmp
-        iR = itmp
-      else
-        do i=2, a_mol_using%colli_data%list(icp)%n_T
-          if ((Tkin .ge. a_mol_using%colli_data%list(icp)%T_coll(i-1)) .and. &
-              (Tkin .le. a_mol_using%colli_data%list(icp)%T_coll(i))) then
-            iL = i-1
-            iR = i
-            exit
-          end if
-        end do
-      end if
-      collisional_transfer_rate_from_iup_to_others = 0D0
-      do ict=1, a_mol_using%colli_data%list(icp)%n_transition
-        iup_col = a_mol_using%colli_data%list(icp)%iup(ict)
-        ilow_col = a_mol_using%colli_data%list(icp)%ilow(ict)
-        if ((iup_col .ne. iup_rad) .or. (ilow_col .ne. ilow_rad)) then
-          ! This makes the difference with calc_critical_density_f
-          cycle
-        end if
-        deltaE = a_mol_using%level_list(iup_col)%energy - a_mol_using%level_list(ilow_col)%energy
-        if (iL .eq. iR) then
-          Cul = a_mol_using%colli_data%list(icp)%Cul(iL, ict)
-        else
-          TL = a_mol_using%colli_data%list(icp)%T_coll(iL)
-          TR = a_mol_using%colli_data%list(icp)%T_coll(iR)
-          Cul = (a_mol_using%colli_data%list(icp)%Cul(iL, ict) * (TR - Tkin) + &
-                  a_mol_using%colli_data%list(icp)%Cul(iR, ict) * (Tkin - TL)) / (TR - TL)
-        end if
-        Clu = Cul * exp(-deltaE/Tkin) * &
-               a_mol_using%level_list(iup_col)%weight / &
-               a_mol_using%level_list(ilow_col)%weight
-        if (iup_col .eq. iup_rad) then
-          collisional_transfer_rate_from_iup_to_others = &
-            collisional_transfer_rate_from_iup_to_others + Cul
-        else if (ilow_col .eq. iup_rad) then
-          collisional_transfer_rate_from_iup_to_others = &
-            collisional_transfer_rate_from_iup_to_others + Clu
-        else
-          write(*,*) "Something is wrong in calc_critical_density_old_def_f!"
-        end if
-      end do
-      a_mol_using%rad_data%list(irt)%critical_densities(icp) = &
-        radiative_transfer_rate_from_iup_to_ilow / &
-        (collisional_transfer_rate_from_iup_to_others + 1d-200)
-    end do
+    call calc_critical_density_old_def_for_one_transition(irt, tau)
   end do
 end subroutine calc_critical_density_old_def_f

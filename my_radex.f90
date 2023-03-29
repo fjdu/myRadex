@@ -96,6 +96,7 @@ subroutine do_my_radex(do_init)
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s, flux_Jy
   double precision Inu_t, tau, t1, t2
   double precision beam_area
+  double precision critical_density, critical_density_old
   integer flag_good
   character(len=9) beam_FWHM_str
   !
@@ -115,21 +116,21 @@ subroutine do_my_radex(do_init)
     call my_radex_prepare
   end if
   !
-  write(beam_FWHM_str, '("(BM:", F4.1, ")")') rdxx_cfg%beam_FWHM_in_arcsec
+  write(beam_FWHM_str, '("(", F4.1, """)")') rdxx_cfg%beam_FWHM_in_arcsec
   !
   call openFileSequentialWrite(rdxx_cfg%fU, &
     combine_dir_filename(rdxx_cfg%dir_save, &
     rdxx_cfg%filename_save), 999, 1)
   write(rdxx_cfg%fU, '(2A5, A12, 2A15, 10A12, 2A7, &
-            &3A12, A2)') &
+            &5A12, A2)') &
     '! iup', 'ilow', 'Eup', 'freq', 'lam', 'Tex', 'tau', 'Tr', &
     'fup', 'flow', 'flux_K', 'flux_int', 'flux_Jy', 'beta', &
-    'Jnu', 'gup', 'glow', 'Aul', 'Bul', 'Blu', 'q'
+    'Jnu', 'gup', 'glow', 'Aul', 'Bul', 'Blu', 'n_crit', 'n_crit_old', 'q'
   write(rdxx_cfg%fU, '(2A5, A12, 2A15, 10A12, 2A7, &
-            &3A12, A2)') &
+            &5A12, A2)') &
     '!    ', '  ', 'K', 'Hz', 'micron', 'K', '', 'K', &
-    '   ', '    ', 'K km/s', 'erg/cm2/s', 'Jy'//beam_FWHM_str, '    ', &
-    '...', '   ', '    ', '...', '...', '...', ''
+    '   ', '    ', 'K km/s', 'erg/cm2/s', 'Jy'//trim(beam_FWHM_str), '    ', &
+    '...', '   ', '    ', 's-1', '...', '...', 'cm-3', 'cm-3', ''
   !
   itot = 0
   ntot = rdxx_cfg%nTkin * rdxx_cfg%ndv * rdxx_cfg%nn_x * &
@@ -226,11 +227,16 @@ subroutine do_my_radex(do_init)
           iupSav = r%iup - 1
         end if
         !
+        call calc_critical_density_for_one_transition(i, tau)
+        critical_density = a_mol_using%rad_data%list(i)%critical_densities(1)
+        call calc_critical_density_old_def_for_one_transition(i, tau)
+        critical_density_old = a_mol_using%rad_data%list(i)%critical_densities(1)
+        !
         write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7E2, 10ES12.3E3, 2F7.1, &
-                  &3ES12.3E3, I2)') &
+                  &5ES12.3E3, I2)') &
           iupSav, ilowSav, r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
           fup, flow, flux_K_km_s, flux_CGS, flux_Jy, r%beta, &
-          r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, flag_good
+          r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, critical_density, critical_density_old, flag_good
       end associate
     end do
     flush(rdxx_cfg%fU)
