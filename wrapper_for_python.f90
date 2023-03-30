@@ -29,9 +29,10 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   use my_radex
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
   double precision, intent(in) :: Tbg
-  logical, intent(in) :: verbose
+  logical, intent(in), optional :: verbose
   logical, intent(in), optional :: recalculateFreqWithEupElow, iLevel_subtract_one
   integer, intent(out) :: n_levels, n_item, n_transitions, n_partners
+  logical verbs
   !
   if (present(recalculateFreqWithEupElow)) then
     rdxx_cfg%recalculateFreqWithEupElow = recalculateFreqWithEupElow
@@ -46,9 +47,15 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   rdxx_cfg%nTbg = 1
   rdxx_cfg%Tbg(1) = Tbg
   !
-  rdxx_cfg%verbose = verbose
+  verbs = .true.
   !
-  if (verbose) then
+  if (present(verbose)) then
+    verbs = verbose
+  end if
+  !
+  rdxx_cfg%verbose = verbs
+  !
+  if (verbs) then
     write(*, '(A, A)') 'Column names of the output: ', column_names
   end if
   !
@@ -60,7 +67,7 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   molecule_name = a_mol_using%name_molecule
   n_partners = a_mol_using%colli_data%n_partner
   !
-  if (verbose) then
+  if (verbs) then
     write(*, '(A, A)') 'Molecule name: ', molecule_name
     write(*, '(A, I10)') 'Number of levels: ', n_levels
     write(*, '(A, I10)') 'Number of columns: ', n_item
@@ -77,6 +84,7 @@ subroutine run_one_params( &
     HII_density_CGS, Electron_density_CGS, &
     n_levels, n_item, n_transitions, &
     donotsolve, &
+    collisioPartnerCrit, &
     energies, f_occupations, data_transitions, cooling_rate)
   !
   use my_radex
@@ -89,6 +97,7 @@ subroutine run_one_params( &
   !
   integer, intent(in) :: n_levels, n_item, n_transitions
   logical, intent(in), optional :: donotsolve
+  integer, intent(in), optional :: collisioPartnerCrit
   double precision, dimension(n_levels), intent(out) :: energies, f_occupations
   double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
   double precision, intent(out) :: cooling_rate
@@ -99,6 +108,7 @@ subroutine run_one_params( &
   double precision critical_density, critical_density_old
   integer i, iupSav, ilowSav
   logical donotsolve_
+  integer iCollPartner
   !
   rdxx_cfg%nTkin   = 1
   rdxx_cfg%ndv     = 1
@@ -128,6 +138,11 @@ subroutine run_one_params( &
     donotsolve_ = donotsolve
   else
     donotsolve_ = .false.
+  end if
+  !
+  iCollPartner = 1
+  if (present(collisioPartnerCrit)) then
+    iCollPartner = collisioPartnerCrit
   end if
   !
   call my_radex_prepare_molecule
@@ -182,9 +197,9 @@ subroutine run_one_params( &
       end if
       !
       call calc_critical_density_for_one_transition(i, tau)
-      critical_density = a_mol_using%rad_data%list(i)%critical_densities(1)
+      critical_density = a_mol_using%rad_data%list(i)%critical_densities(iCollPartner)
       call calc_critical_density_old_def_for_one_transition(i, tau)
-      critical_density_old = a_mol_using%rad_data%list(i)%critical_densities(1)
+      critical_density_old = a_mol_using%rad_data%list(i)%critical_densities(iCollPartner)
       !
       data_transitions(:, i) = &
         (/ &
@@ -203,6 +218,8 @@ subroutine run_one_params_geometry( &
     HII_density_CGS, Electron_density_CGS, &
     n_levels, n_item, n_transitions, &
     geotype, &
+    donotsolve, &
+    collisioPartnerCrit, &
     energies, f_occupations, data_transitions, cooling_rate)
   !
   use my_radex
@@ -215,10 +232,25 @@ subroutine run_one_params_geometry( &
   !
   integer, intent(in) :: n_levels, n_item, n_transitions
   character(len=16), intent(in) :: geotype
+  logical, intent(in), optional :: donotsolve
+  integer, intent(in), optional :: collisioPartnerCrit
   !
   double precision, dimension(n_levels), intent(out) :: energies, f_occupations
   double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
   double precision, intent(out) :: cooling_rate
+  logical donotsolve_
+  integer iCollPartner
+  !
+  if (present(donotsolve)) then
+    donotsolve_ = donotsolve
+  else
+    donotsolve_ = .false.
+  end if
+  !
+  iCollPartner = 1
+  if (present(collisioPartnerCrit)) then
+    iCollPartner = collisioPartnerCrit
+  end if
   !
   rdxx_cfg%geotype = adjustl(geotype)
   if (rdxx_cfg%verbose) then
@@ -231,7 +263,7 @@ subroutine run_one_params_geometry( &
     H2_density_CGS, HI_density_CGS, &
     oH2_density_CGS, pH2_densty_CGS, &
     HII_density_CGS, Electron_density_CGS, &
-    n_levels, n_item, n_transitions, .false., &
+    n_levels, n_item, n_transitions, donotsolve_, iCollPartner, &
     energies, f_occupations, data_transitions, cooling_rate)
 end subroutine run_one_params_geometry
 

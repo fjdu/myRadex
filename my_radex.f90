@@ -78,6 +78,7 @@ type :: type_rdxx_cfg
   double precision opH2_ratio
   logical opH2eq3
   integer fU
+  integer :: collisioPartnerCrit = 1
 end type type_rdxx_cfg
 
 type(type_rdxx_cfg) :: rdxx_cfg
@@ -131,6 +132,8 @@ subroutine do_my_radex(do_init)
     '!    ', '  ', 'K', 'Hz', 'micron', 'K', '', 'K', &
     '   ', '    ', 'K km/s', 'erg/cm2/s', 'Jy'//trim(beam_FWHM_str), '    ', &
     '...', '   ', '    ', 's-1', '...', '...', 'cm-3', 'cm-3', ''
+  !
+  write(*,*) 'Critical density will be included for collisional partner: ',  rdxx_cfg%collisioPartnerCrit
   !
   itot = 0
   ntot = rdxx_cfg%nTkin * rdxx_cfg%ndv * rdxx_cfg%nn_x * &
@@ -228,9 +231,9 @@ subroutine do_my_radex(do_init)
         end if
         !
         call calc_critical_density_for_one_transition(i, tau)
-        critical_density = a_mol_using%rad_data%list(i)%critical_densities(1)
+        critical_density = a_mol_using%rad_data%list(i)%critical_densities(rdxx_cfg%collisioPartnerCrit)
         call calc_critical_density_old_def_for_one_transition(i, tau)
-        critical_density_old = a_mol_using%rad_data%list(i)%critical_densities(1)
+        critical_density_old = a_mol_using%rad_data%list(i)%critical_densities(rdxx_cfg%collisioPartnerCrit)
         !
         write(rdxx_cfg%fU, '(2I5, F12.4, 2ES15.7E2, 10ES12.3E3, 2F7.1, &
                   &5ES12.3E3, I2)') &

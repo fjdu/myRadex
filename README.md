@@ -1,5 +1,7 @@
 **What's new**
 
+- 2023-03-30: Now the `collisioPartnerCrit` parameter can be used to specify which collision partner (1-based) will have critical densities saved in the output.
+
 - 2023-03-29: The critical densities (calculated in two manners) are included in the output file.  Note that different collisional partners have different sets of critical densities.  At present only the values for the first collisional partner are included in the output file.
 
 - 2022-06-06: `myRadex` is now included in the Astrophysics Source Code Library as ["myRadex: Radex with a twist"](https://ascl.net/2205.011).
