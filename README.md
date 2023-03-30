@@ -9,6 +9,14 @@
 
 ---
 
+For the calculation of the critical density:
+
+By default equation (9) of [Shirley2015](https://iopscience.iop.org/article/10.1086/680342) is used.
+
+A simpler definition that is only valid for two-level system is also used (labeled as "n_crit_old" in the output).  This is described in the text below equation (5) of [Shirley2015](https://iopscience.iop.org/article/10.1086/680342).
+
+---
+
 This code solves essentially the same problem as
 [```RADEX```](http://home.strw.leidenuniv.nl/~moldata/radex.html) written by
 Van der Tak, except that we take a different approach to solve the statistical
