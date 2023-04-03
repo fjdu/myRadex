@@ -436,7 +436,9 @@ subroutine statistic_equil_solve
     statistic_equil_params%RWORK(1:a_mol_using%n_level))
   !
   do i=1, a_mol_using%n_level
-    if (a_mol_using%f_occupation(i) .lt. -1D4*statistic_equil_params%ATOL) then
+    if (a_mol_using%f_occupation(i) .lt. -1D2*statistic_equil_params%ATOL) then
+      write(*, '(/A)') 'Negative occupation number occurred.'
+      write(*, *) i, a_mol_using%f_occupation(i)
       statistic_equil_params%is_good = .false.
     end if
     if (a_mol_using%f_occupation(i) .lt. 0D0) then
@@ -454,18 +456,20 @@ subroutine statistic_equil_solve_Newton
   integer IERR
   integer, dimension(50) :: IOPT
   !
-  XSCAL = a_mol_using%f_occupation*1D-10 + 1D-30
-  statistic_equil_params%RTOL = 1D-10
-  IOPT = 0
+  XSCAL = a_mol_using%f_occupation*1D-6 + 1D-20
+  statistic_equil_params%RTOL = 1D-6
   !
+  IOPT = 0
   statistic_equil_params%IWORK = 0
   statistic_equil_params%RWORK = 0D0
   !
   IOPT(3) = 1 ! JACGEN
-  IOPT(11) = 0 ! MPRERR
+  IOPT(11) = 3 ! MPRERR
+  IOPT(13) = 3 ! MPRMON
   IOPT(31) = 4 ! NONLIN
-  !
-  statistic_equil_params%IWORK(1) = 50000 ! NITER
+  ! IOPT(33) = 1
+  statistic_equil_params%IWORK(31) = 50000 ! NITER
+  statistic_equil_params%RWORK(22) = 1D-16 ! FCMIN
   !
   call NLEQ1( &
              a_mol_using%n_level, &
@@ -480,11 +484,18 @@ subroutine statistic_equil_solve_Newton
              statistic_equil_params%IWORK, &
              statistic_equil_params%LRW, &
              statistic_equil_params%RWORK)
-  if (IERR .eq. 10) then
-    write(*, '(/A)') 'LIW too small!'
+  if (IERR .eq. 0) then
+    a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)
+  else if (IERR .eq. -1) then
+    write(*, '(A)') 'More iterations are needed!'
+  else if (IERR .eq. 10) then
+    write(*, '(A)') 'LIW too small!'
+    stop
+  else
+    write(*, '("Error code: ", I4)') IERR
+    write(*,*) IOPT
     stop
   end if
-  a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)
 end subroutine statistic_equil_solve_Newton
 
 
@@ -633,17 +644,16 @@ subroutine stat_equili_fcn(N, X, F, IFAIL)
   double precision, intent(out), dimension(N) :: F
   integer, intent(inout) :: IFAIL
   integer i
-  IFAIL = 0
+  double precision tmp
   call stat_equili_ode_f(N, 0D0, X, F)
-  F(N) = 0D0
+  tmp = 0D0
   do i=1, N
-    F(N) = F(N) + X(i)
     if (X(i) .lt. 0D0) then
       IFAIL = 1
     end if
+    tmp = tmp + X(i)
   end do
-  F(N) = F(N) - 1D0
-  write(*,*) X
+  F(N) = tmp - 1D0
 end subroutine stat_equili_fcn
 
 
@@ -654,14 +664,13 @@ subroutine stat_equili_jac(N, LDJAC, X, DFDX, IFAIL)
   double precision, intent(out), dimension(LDJAC, N) :: DFDX
   integer, intent(inout) :: IFAIL
   integer i
-  IFAIL = 0
+  call stat_equili_ode_jac(N, 0D0, X, 0, 0, DFDX, LDJAC)
   do i=1, N
     if (X(i) .lt. 0D0) then
       IFAIL = 1
       exit
     end if
   end do
-  call stat_equili_ode_jac(N, 0D0, X, 0, 0, DFDX, LDJAC)
   DFDX(LDJAC, 1:N) = 1D0
 end subroutine stat_equili_jac
 

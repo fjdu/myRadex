@@ -65,6 +65,8 @@ type :: type_rdxx_cfg
   character(len=128) :: dir_out = ''
   character(len=128) :: filename_out = ''
   !
+  character(len=16) :: solve_method = 'ODE'
+  !
   logical :: provideLength = .false.
   double precision length_scale
   !
@@ -184,7 +186,13 @@ subroutine do_my_radex(do_init)
     end if
     !
     call my_radex_prepare_molecule
-    call statistic_equil_solve
+    if (trim(rdxx_cfg%solve_method) .eq. 'ODE') then
+      call statistic_equil_solve
+    else if (trim(rdxx_cfg%solve_method) .eq. 'Newton') then
+      call statistic_equil_solve_Newton
+    else
+      write(*,*) 'Unknown solving method: ', trim(rdxx_cfg%solve_method)
+    end if
     !
     if (statistic_equil_params%is_good) then
       flag_good = 1

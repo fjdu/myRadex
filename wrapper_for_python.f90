@@ -25,12 +25,18 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
     Tbg, &
     verbose, &
     recalculateFreqWithEupElow, iLevel_subtract_one, &
+    max_code_run_time, &
+    max_evol_time, &
+    rtol, atol, &
+    solve_method, &
     n_levels, n_item, n_transitions, n_partners)
   use my_radex
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
   double precision, intent(in) :: Tbg
   logical, intent(in), optional :: verbose
   logical, intent(in), optional :: recalculateFreqWithEupElow, iLevel_subtract_one
+  double precision, intent(in), optional :: max_code_run_time, max_evol_time, rtol, atol
+  character(len=*), intent(in), optional :: solve_method
   integer, intent(out) :: n_levels, n_item, n_transitions, n_partners
   logical verbs
   !
@@ -39,6 +45,22 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   end if
   if (present(iLevel_subtract_one)) then
     rdxx_cfg%iLevel_subtract_one = iLevel_subtract_one
+  end if
+  !
+  if (present(max_code_run_time)) then
+    rdxx_cfg%max_code_run_time = max_code_run_time
+  end if
+  if (present(max_evol_time)) then
+    rdxx_cfg%max_evol_time = max_evol_time
+  end if
+  if (present(rtol)) then
+    rdxx_cfg%rtol = rtol
+  end if
+  if (present(atol)) then
+    rdxx_cfg%atol = atol
+  end if
+  if (present(solve_method)) then
+    rdxx_cfg%solve_method = solve_method
   end if
   !
   rdxx_cfg%dir_transition_rates = dir_transition_rates
@@ -147,7 +169,13 @@ subroutine run_one_params( &
   !
   call my_radex_prepare_molecule
   if (.not. donotsolve_) then
-    call statistic_equil_solve
+    if (trim(rdxx_cfg%solve_method) .eq. 'ODE') then
+      call statistic_equil_solve
+    else if (trim(rdxx_cfg%solve_method) .eq. 'Newton') then
+      call statistic_equil_solve_Newton
+    else
+      write(*,*) 'Unknown solving method: ', trim(rdxx_cfg%solve_method)
+    end if
   end if
   call calc_cooling_rate
   !

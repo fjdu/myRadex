@@ -1,6 +1,17 @@
 cpl		?= gfortran
 f2py	?= f2py
 
+SUPPRESS_WARNING_FOR_LEGACY_CODE = -w
+
+# https://stackoverflow.com/questions/42419301/makefile-emit-warning-gcc-version-is-lower-than-4-8-0
+GFORTRAN_LEGACYOPT = -std=legacy
+GFORTRAN_LEGACY_VERSION = "8"
+GFORTRAN_VERSION := "`gfortran -dumpversion`"
+IS_GFORTRAN_ABOVE_LEGACY_VERSION := $(shell expr "$(GFORTRAN_VERSION)" ">=" "$(GFORTRAN_LEGACY_VERSION)")
+ifeq ("$(IS_GFORTRAN_ABOVE_LEGACY_VERSION)", "0")
+  GFORTRAN_LEGACYOPT =
+endif
+
 ifeq ($(cpl), ifort)
   lflags_debug = -debug -save-temps -fpic -heap-arrays -O0 -g -traceback -check all -fpe0 -fp-stack-check -fp-model precise -fimf-arch-consistency=true -fpp
   lflags_fast = -O2 -fpp
@@ -36,34 +47,34 @@ my_radex.o: my_radex.f90 sub_trivials.o sub_global_variables.o statistic_equilib
 	$(cpl) $(cflags) my_radex.f90
 
 opkda1.o:  opkda1.f
-	$(cpl) $(cflags) -std=legacy opkda1.f
+	$(cpl) $(cflags) $(GFORTRAN_LEGACYOPT) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) opkda1.f
 
 opkda2.o:  opkda2.f
-	$(cpl) $(cflags) -std=legacy opkda2.f
+	$(cpl) $(cflags) $(GFORTRAN_LEGACYOPT) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) opkda2.f
 
 opkdmain.o: opkdmain.f opkda1.o opkda2.o
-	$(cpl) $(cflags) -std=legacy opkdmain.f
+	$(cpl) $(cflags) $(GFORTRAN_LEGACYOPT) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) opkdmain.f
 
 statistic_equilibrium.o: statistic_equilibrium.f90 sub_trivials.o sub_global_variables.o nleq1.o linalg_nleq1.o
 	$(cpl) $(cflags) statistic_equilibrium.f90
 
 nleq1.o: nleq1.f
-	$(cpl) $(cflags) nleq1.f
+	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) nleq1.f
 
 linalg_nleq1.o: linalg_nleq1.f
-	$(cpl) $(cflags) linalg_nleq1.f
+	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) linalg_nleq1.f
 
 wnorm.o: wnorm.f
-	$(cpl) $(cflags) wnorm.f
+	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) wnorm.f
 
 zibconst.o: zibconst.f
-	$(cpl) $(cflags) zibconst.f
+	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) zibconst.f
 
 zibmon.o: zibmon.f
-	$(cpl) $(cflags) zibmon.f
+	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) zibmon.f
 
 zibsec.o: zibsec.f
-	$(cpl) $(cflags) zibsec.f
+	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) zibsec.f
 
 sub_global_variables.o:  sub_global_variables.f90
 	$(cpl) $(cflags) sub_global_variables.f90
