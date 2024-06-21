@@ -29,6 +29,7 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
     max_evol_time, &
     rtol, atol, &
     solve_method, &
+    f_occupation_init_method, &
     n_levels, n_item, n_transitions, n_partners)
   use my_radex
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
@@ -36,9 +37,17 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   logical, intent(in), optional :: verbose
   logical, intent(in), optional :: recalculateFreqWithEupElow, iLevel_subtract_one
   double precision, intent(in), optional :: max_code_run_time, max_evol_time, rtol, atol
-  character(len=*), intent(in), optional :: solve_method
+  character(len=*), intent(in), optional :: solve_method, f_occupation_init_method
   integer, intent(out) :: n_levels, n_item, n_transitions, n_partners
   logical verbs
+  !
+  verbs = .true.
+  !
+  if (present(verbose)) then
+    verbs = verbose
+  end if
+  !
+  rdxx_cfg%verbose = verbs
   !
   if (present(recalculateFreqWithEupElow)) then
     rdxx_cfg%recalculateFreqWithEupElow = recalculateFreqWithEupElow
@@ -61,6 +70,17 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   end if
   if (present(solve_method)) then
     rdxx_cfg%solve_method = solve_method
+  else
+    write(*, '(A)') "solve_method not provided"
+  end if
+  if (present(f_occupation_init_method)) then
+    rdxx_cfg%f_occupation_init_method = f_occupation_init_method
+  else
+    write(*, '(A)') "f_occupation_init_method not provided"
+  end if
+  if (verbs) then
+    write(*, '(A, A)') "Using solve_method: ", rdxx_cfg%solve_method
+    write(*, '(A, A)') "Using f_occupation_init_method: ", rdxx_cfg%f_occupation_init_method
   end if
   !
   rdxx_cfg%dir_transition_rates = dir_transition_rates
@@ -68,14 +88,6 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   !
   rdxx_cfg%nTbg = 1
   rdxx_cfg%Tbg(1) = Tbg
-  !
-  verbs = .true.
-  !
-  if (present(verbose)) then
-    verbs = verbose
-  end if
-  !
-  rdxx_cfg%verbose = verbs
   !
   if (verbs) then
     write(*, '(A, A)') 'Column names of the output: ', column_names
@@ -174,9 +186,10 @@ subroutine run_one_params( &
     else if (trim(rdxx_cfg%solve_method) .eq. 'Newton') then
       call statistic_equil_solve_Newton
     else
-      write(*,*) 'Unknown solving method: ', trim(rdxx_cfg%solve_method)
+      write(*,*) 'Nothing is done because of unknown solving method: ', trim(rdxx_cfg%solve_method)
     end if
   end if
+  write(*,'(A//)') 'Finish solving...'
   call calc_cooling_rate
   !
   flag_good = statistic_equil_params%is_good
@@ -281,9 +294,6 @@ subroutine run_one_params_geometry( &
   end if
   !
   rdxx_cfg%geotype = adjustl(geotype)
-  if (rdxx_cfg%verbose) then
-    write(*,*) 'Using geotype:', rdxx_cfg%geotype
-  end if
   !
   call run_one_params( &
     Tkin, dv_CGS, &

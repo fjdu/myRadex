@@ -354,7 +354,7 @@ subroutine statistic_equil_solve
   use my_timer
   external stat_equili_ode_f, stat_equili_ode_jac
   integer i
-  double precision t, tout, t_step
+  double precision t, tout, t_step, tscal, edot
   type(atimer) timer
   real time_thisstep, runtime_thisstep, time_laststep, runtime_laststep
   !
@@ -431,33 +431,42 @@ subroutine statistic_equil_solve
     statistic_equil_params%is_good = .false.
   end if
   !
+  a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)
+  !
   call stat_equili_ode_f(a_mol_using%n_level, &
     t, a_mol_using%f_occupation, &
     statistic_equil_params%RWORK(1:a_mol_using%n_level))
   !
   do i=1, a_mol_using%n_level
-    if (a_mol_using%f_occupation(i) .lt. -1D2*statistic_equil_params%ATOL) then
+    if (a_mol_using%f_occupation(i) .lt. -1D1*statistic_equil_params%ATOL) then
       write(*, '(/A)') 'Negative occupation number occurred.'
       write(*, *) i, a_mol_using%f_occupation(i)
       statistic_equil_params%is_good = .false.
+    end if
+    tscal = a_mol_using%f_occupation(i)/(abs(statistic_equil_params%RWORK(i))+1D-50)
+    if ((a_mol_using%f_occupation(i) .ge. statistic_equil_params%ATOL) .and. &
+        (tscal .le. 1D-4*statistic_equil_params%t_max)) then
+      write(*, '(/A)') 'Equilibrium probably not reached.'
+      write(*, *) i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
     end if
     if (a_mol_using%f_occupation(i) .lt. 0D0) then
       a_mol_using%f_occupation(i) = 0D0
     end if
   end do
-  a_mol_using%f_occupation = a_mol_using%f_occupation / &
-                             sum(a_mol_using%f_occupation)
+  !
+  call calc_energy_derivative(a_mol_using%n_level, a_mol_using%f_occupation, edot)
+  write(*,*) 'd/dt \sum \dot{x_i}^2:', edot
 end subroutine statistic_equil_solve
 
 
 subroutine statistic_equil_solve_Newton
   external stat_equili_fcn, stat_equili_jac
   double precision, dimension(a_mol_using%n_level) :: XSCAL
-  integer IERR
+  double precision :: t=0D0, tscal
+  integer IERR, i
   integer, dimension(50) :: IOPT
   !
-  XSCAL = a_mol_using%f_occupation*1D-6 + 1D-20
-  statistic_equil_params%RTOL = 1D-6
+  XSCAL = 1D-30
   !
   IOPT = 0
   statistic_equil_params%IWORK = 0
@@ -467,35 +476,59 @@ subroutine statistic_equil_solve_Newton
   IOPT(11) = 3 ! MPRERR
   IOPT(13) = 3 ! MPRMON
   IOPT(31) = 4 ! NONLIN
-  ! IOPT(33) = 1
-  statistic_equil_params%IWORK(31) = 50000 ! NITER
-  statistic_equil_params%RWORK(22) = 1D-16 ! FCMIN
+  IOPT(32) = 0 ! 1:Broyden
+  IOPT(33) = 0 ! 0:Damping
+  statistic_equil_params%IWORK(31) = 5000 ! NITER
+  statistic_equil_params%RWORK(22) = 1D-20 ! FCMIN
   !
-  call NLEQ1( &
-             a_mol_using%n_level, &
-             stat_equili_fcn, &
-             stat_equili_jac, &
-             a_mol_using%f_occupation, &
-             XSCAL, &
-             statistic_equil_params%RTOL, &
-             IOPT, &
-             IERR, &
-             statistic_equil_params%LIW, &
-             statistic_equil_params%IWORK, &
-             statistic_equil_params%LRW, &
-             statistic_equil_params%RWORK)
+#ifdef USE_EQ_SOLVER_NLEQ2
+  call NLEQ2&
+#else
+  call NLEQ1&
+#endif
+    (a_mol_using%n_level, &
+     stat_equili_fcn, &
+     stat_equili_jac, &
+     a_mol_using%f_occupation, &
+     XSCAL, &
+     statistic_equil_params%RTOL, &
+     IOPT, &
+     IERR, &
+     statistic_equil_params%LIW, &
+     statistic_equil_params%IWORK, &
+     statistic_equil_params%LRW, &
+     statistic_equil_params%RWORK)
   if (IERR .eq. 0) then
-    a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)
+    write(*, '(A)') 'Iteration converged!'
   else if (IERR .eq. -1) then
     write(*, '(A)') 'More iterations are needed!'
   else if (IERR .eq. 10) then
     write(*, '(A)') 'LIW too small!'
-    stop
   else
     write(*, '("Error code: ", I4)') IERR
     write(*,*) IOPT
-    stop
   end if
+  !
+  a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)
+  !
+  call stat_equili_ode_f(a_mol_using%n_level, &
+    t, a_mol_using%f_occupation, &
+    statistic_equil_params%RWORK(1:a_mol_using%n_level))
+  !
+  do i=1, a_mol_using%n_level
+    if (a_mol_using%f_occupation(i) .lt. -1D1*statistic_equil_params%ATOL) then
+      write(*, '(/A)') 'Negative occupation number occurred.'
+      write(*, *) i, a_mol_using%f_occupation(i)
+      statistic_equil_params%is_good = .false.
+    end if
+    tscal = a_mol_using%f_occupation(i)/(abs(statistic_equil_params%RWORK(i))+1D-50)
+        
+    if ((a_mol_using%f_occupation(i) .ge. statistic_equil_params%ATOL) .and. &
+        (tscal .le. 1D-4*statistic_equil_params%t_max)) then
+      write(*, '(/A)') 'Equilibrium probably not reached.'
+      write(*, *) i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+    end if
+  end do
 end subroutine statistic_equil_solve_Newton
 
 
@@ -555,7 +588,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
   !
   tt = abs(tau)
   select case(geotype)
-    case ('spherical', 'Spherical', 'SPHERICAL')
+    case ('spherical', 'Spherical', 'SPHERICAL', 'sphere', 'Sphere', 'SPHERE')
       if (tt .le. const_small_tau) then
         ! Error < const_small_tau
         beta = 1D0
@@ -629,7 +662,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
       else
         tmp = exp(-tau)
         beta = (1D0 - tmp) / tau
-        dbeta_dtau = ((1D0 + tau) * tmp - 1D0) / tau
+        dbeta_dtau = ((1D0 + tau) * tmp - 1D0) / (tau*tau)
       end if
   end select
 end subroutine calc_beta
@@ -648,9 +681,10 @@ subroutine stat_equili_fcn(N, X, F, IFAIL)
   call stat_equili_ode_f(N, 0D0, X, F)
   tmp = 0D0
   do i=1, N
-    if (X(i) .lt. 0D0) then
-      IFAIL = 1
-    end if
+    !if (X(i) .lt. 0D0) then
+    !  IFAIL = 1
+    !  write(*,*) 'X(i)<0: ', 'x(', i, ') = ', x(i)
+    !end if
     tmp = tmp + X(i)
   end do
   F(N) = tmp - 1D0
@@ -666,12 +700,13 @@ subroutine stat_equili_jac(N, LDJAC, X, DFDX, IFAIL)
   integer i
   call stat_equili_ode_jac(N, 0D0, X, 0, 0, DFDX, LDJAC)
   do i=1, N
-    if (X(i) .lt. 0D0) then
-      IFAIL = 1
-      exit
-    end if
+    !if (X(i) .lt. 0D0) then
+    !  IFAIL = 1
+    !  exit
+    !end if
   end do
   DFDX(LDJAC, 1:N) = 1D0
+  !write(*,'(I6,I6,/)') LDJAC,N
 end subroutine stat_equili_jac
 
 
@@ -778,6 +813,7 @@ end subroutine stat_equili_ode_f
 
 
 subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
+  ! PD(i,j) = \partial f_i / \partial x_j
   use statistic_equilibrium
   use phy_const
   implicit none
@@ -795,6 +831,9 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     dS_dy_up, dS_dy_low
   double precision jnu, knu
   double precision t1
+  do j=1,NEQ
+    PD(:,j) = 0D0
+  end do
   Tkin = a_mol_using%Tkin
   do i=1, a_mol_using%rad_data%n_transition
     iup = a_mol_using%rad_data%list(i)%iup
@@ -1087,3 +1126,19 @@ subroutine calc_critical_density_old_def_f(tau)
     call calc_critical_density_old_def_for_one_transition(irt, tau)
   end do
 end subroutine calc_critical_density_old_def_f
+
+
+
+subroutine calc_energy_derivative(n, x, edot)
+  external stat_equili_ode_f, stat_equili_ode_jac
+  integer, intent(in) :: n
+  double precision, intent(in), dimension(n) :: x
+  double precision, intent(out) :: edot
+  double precision :: t = 0D0
+  double precision, dimension(n) :: f
+  double precision, dimension(n,n) :: jac
+  integer i,j
+  call stat_equili_ode_f(n, t, x, f)
+  call stat_equili_ode_jac(n, t, x, 0, 0, jac, n)
+  edot = dot_product(f,matmul(jac,f))
+end subroutine calc_energy_derivative

@@ -38,8 +38,8 @@ type :: type_rdxx_cfg
   !
   double precision :: freqmin=0D0, freqmax=1D99
   !
-  double precision :: max_evol_time = 1D6
-  real :: max_code_run_time = 5.0
+  double precision :: max_evol_time = 1D16
+  double precision :: max_code_run_time = 10.0
   double precision :: rtol = 1D-4, atol = 1D-20
   !
   character(len=16)  :: geotype = ''
@@ -66,6 +66,7 @@ type :: type_rdxx_cfg
   character(len=128) :: filename_out = ''
   !
   character(len=16) :: solve_method = 'ODE'
+  character(len=16) :: f_occupation_init_method = 'Boltzmann'
   !
   logical :: provideLength = .false.
   double precision length_scale
@@ -77,8 +78,8 @@ type :: type_rdxx_cfg
     n_H2, n_HI, n_oH2, n_pH2, n_Hplus, n_E, n_He   
   integer :: nTkin=1, ndv=1, nn_x=1, nNcol_x=1, ndens=1 ! Vector sizes
   integer iTkin, idv, in_x, iNcol_x, idens ! Loop indices
-  double precision opH2_ratio
-  logical opH2eq3
+  double precision ::  opH2_ratio = 3D0
+  logical :: opH2eq3 = .false.
   integer fU
   integer :: collisioPartnerCrit = 1
 end type type_rdxx_cfg
@@ -186,13 +187,14 @@ subroutine do_my_radex(do_init)
     end if
     !
     call my_radex_prepare_molecule
-    if (trim(rdxx_cfg%solve_method) .eq. 'ODE') then
-      call statistic_equil_solve
-    else if (trim(rdxx_cfg%solve_method) .eq. 'Newton') then
-      call statistic_equil_solve_Newton
-    else
-      write(*,*) 'Unknown solving method: ', trim(rdxx_cfg%solve_method)
-    end if
+    select case(rdxx_cfg%solve_method)
+      case ('ODE', 'ode')
+        call statistic_equil_solve
+      case ('Newton', 'NEWTON')
+        call statistic_equil_solve_Newton
+      case default
+        write(*,*) 'Unknown method: "', trim(rdxx_cfg%solve_method), '"'
+    end select
     !
     if (statistic_equil_params%is_good) then
       flag_good = 1
@@ -281,6 +283,9 @@ end function FWHM_to_area
 subroutine my_radex_prepare_molecule
   integer i
   !
+  if (rdxx_cfg%verbose) then
+    write(*,*) 'Using geotype:"', rdxx_cfg%geotype, '"'
+  end if
   a_mol_using%geotype = rdxx_cfg%geotype ! Geometric type
   !
   a_mol_using%Tkin = rdxx_cfg%Tkin(rdxx_cfg%iTkin) ! K
@@ -302,9 +307,14 @@ subroutine my_radex_prepare_molecule
                                a_mol_using%density_mol
   end if
   !
-  ! Set the initial occupation to be LTE
-  a_mol_using%f_occupation = a_mol_using%level_list%weight * &
-      exp(-a_mol_using%level_list%energy / a_mol_using%Tkin)
+  ! Set the initial occupation
+  select case (rdxx_cfg%f_occupation_init_method)
+    case ('Boltzmann', 'BOLTZMANN', 'boltzmann')
+      a_mol_using%f_occupation = a_mol_using%level_list%weight * &
+        exp(-a_mol_using%level_list%energy / a_mol_using%Tkin)
+    case default
+      call random_number(a_mol_using%f_occupation)
+  end select
   ! Normalize
   a_mol_using%f_occupation = a_mol_using%f_occupation / &
                              sum(a_mol_using%f_occupation)
@@ -399,10 +409,6 @@ subroutine my_radex_prepare
     combine_dir_filename(rdxx_cfg%dir_transition_rates, &
     rdxx_cfg%filename_molecule), rdxx_cfg%recalculateFreqWithEupElow)
   !
-  if (rdxx_cfg%verbose) then
-    write(*, '(A, I5)') 'Number of levels: ', a_mol_using%n_level
-  end if
-  !
   statistic_equil_params%max_runtime_allowed = rdxx_cfg%max_code_run_time
   statistic_equil_params%rtol = rdxx_cfg%rtol
   statistic_equil_params%atol = rdxx_cfg%atol
@@ -412,8 +418,8 @@ subroutine my_radex_prepare
   !
   ! Prepare for the storage
   statistic_equil_params%NEQ = a_mol_using%n_level
-  statistic_equil_params%LIW = 50 + statistic_equil_params%NEQ
-  statistic_equil_params%LRW = 61 + 13*statistic_equil_params%NEQ + &
+  statistic_equil_params%LIW = 50 + statistic_equil_params%NEQ*2
+  statistic_equil_params%LRW = 61 + 13*statistic_equil_params%NEQ*2 + &
                                statistic_equil_params%NEQ*statistic_equil_params%NEQ
   if (statistic_equil_params%NEQ .gt. a_mol_using%n_level) then
     if (allocated(statistic_equil_params%IWORK)) then

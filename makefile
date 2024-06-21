@@ -1,5 +1,6 @@
 cpl		?= gfortran
 f2py	?= f2py
+equilibrium_solver ?= NLEQ1
 
 SUPPRESS_WARNING_FOR_LEGACY_CODE = -w
 
@@ -20,6 +21,14 @@ else
   lflags_fast = -O2
 endif
 
+ifeq ($(equilibrium_solver), NLEQ2)
+  eq_solver = nleq2
+  eq_solver_switch = -DUSE_EQ_SOLVER_NLEQ2
+else
+  eq_solver = nleq1
+  eq_solver_switch =
+endif
+
 all: lflags = $(lflags_fast)
 all: my_radex
 
@@ -29,13 +38,13 @@ wrapper: wrapper_my_radex.so
 debug: lflags = $(lflags_debug)
 debug: my_radex
 
-cflags = $(lflags) -c
+cflags = $(lflags) -c -cpp $(eq_solver_switch)
 
-my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
-	$(cpl) $(lflags) -o my_radex configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+	$(cpl) $(lflags) -o my_radex configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 
-wrapper_my_radex.so: wrapper_for_python.f90 my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
-	$(f2py) -c -m wrapper_my_radex wrapper_for_python.f90 my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o nleq1.o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+wrapper_my_radex.so: wrapper_for_python.f90 my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+	$(f2py) -c -m wrapper_my_radex wrapper_for_python.f90 my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 
 configure.o: configure.f90 sub_trivials.o my_radex.o statistic_equilibrium.o
 	$(cpl) $(cflags) configure.f90
@@ -55,11 +64,11 @@ opkda2.o:  opkda2.f
 opkdmain.o: opkdmain.f opkda1.o opkda2.o
 	$(cpl) $(cflags) $(GFORTRAN_LEGACYOPT) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) opkdmain.f
 
-statistic_equilibrium.o: statistic_equilibrium.f90 sub_trivials.o sub_global_variables.o nleq1.o linalg_nleq1.o
+statistic_equilibrium.o: statistic_equilibrium.f90 sub_trivials.o sub_global_variables.o $(eq_solver).o linalg_nleq1.o
 	$(cpl) $(cflags) statistic_equilibrium.f90
 
-nleq1.o: nleq1.f
-	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) nleq1.f
+$(eq_solver).o: $(eq_solver).f
+	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) $(eq_solver).f
 
 linalg_nleq1.o: linalg_nleq1.f
 	$(cpl) $(cflags) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) linalg_nleq1.f
