@@ -31,7 +31,9 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
     solve_method, &
     f_occupation_init_method, &
     n_levels, n_item, n_transitions, n_partners)
-  use my_radex
+  !
+  use my_radex, only: rdxx_cfg, a_mol_using
+  !
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
   double precision, intent(in) :: Tbg
   logical, intent(in), optional :: verbose
