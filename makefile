@@ -1,6 +1,7 @@
 cpl		?= gfortran
 f2py	?= f2py
 equilibrium_solver ?= NLEQ1
+PYTHON?=python3
 
 SUPPRESS_WARNING_FOR_LEGACY_CODE = -w
 
@@ -29,6 +30,9 @@ else
   eq_solver_switch =
 endif
 
+LIB_DIR=.
+MYRADEX_LIB=$(LIB_DIR)/libmy_radex.a
+
 all: lflags = $(lflags_fast)
 all: my_radex
 
@@ -40,10 +44,18 @@ debug: my_radex
 
 cflags = $(lflags) -c -cpp $(eq_solver_switch)
 
+OBJSWRAPPER=linalg_nleq1.o my_radex.o nleq1.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o wnorm.o zibconst.o zibmon.o zibsec.o wrapper_for_python.o wrapper_for_cython.o pipe_fortran_python.o
+
+cython_wrapper: setup.py wrapper_for_cython.pyx $(MYRADEX_LIB)
+	$(PYTHON) setup.py build_ext --inplace
+
+$(MYRADEX_LIB): $(OBJSWRAPPER)
+	ar rcs $(MYRADEX_LIB) $(OBJSWRAPPER)
+
 my_radex: configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 	$(cpl) $(lflags) -o my_radex configure.o main.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 
-wrapper_my_radex.so: wrapper_for_python.f90 my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
+wrapper_my_radex.so: wrapper_for_python.o my_radex.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o $(eq_solver).o linalg_nleq1.o wnorm.o zibconst.o zibmon.o zibsec.o 
 	$(f2py) -c -m wrapper_my_radex wrapper_for_python.f90 --include-path "$(shell pwd)" --backend meson
 
 configure.o: configure.f90 sub_trivials.o my_radex.o statistic_equilibrium.o
@@ -54,6 +66,15 @@ main.o: main.f90 my_radex.o sub_trivials.o sub_global_variables.o statistic_equi
 
 my_radex.o: my_radex.f90 sub_trivials.o sub_global_variables.o statistic_equilibrium.o
 	$(cpl) $(cflags) my_radex.f90
+
+wrapper_for_cython.o: wrapper_for_cython.f90 wrapper_for_python.o sub_trivials.o sub_global_variables.o statistic_equilibrium.o
+	$(cpl) $(cflags) wrapper_for_cython.f90
+
+pipe_fortran_python.o: pipe_fortran_python.cpp pipe_fortran_python.hpp wrapper_for_cython.o
+	g++ -std=c++11 -Wall -g -O3 -fPIC -c pipe_fortran_python.cpp
+
+wrapper_for_python.o: wrapper_for_python.f90 my_radex.o
+	$(cpl) $(cflags) wrapper_for_python.f90
 
 opkda1.o:  opkda1.f
 	$(cpl) $(cflags) $(GFORTRAN_LEGACYOPT) $(SUPPRESS_WARNING_FOR_LEGACY_CODE) opkda1.f

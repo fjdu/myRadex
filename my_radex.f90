@@ -28,10 +28,10 @@ integer, parameter :: ndim_cfg_vec = 100
 integer, parameter :: ndim_Tbg = 8
 
 type :: type_rdxx_cfg
-  character(len=128) :: dir_transition_rates = './'
-  character(len=128) :: dir_save = './'
-  character(len=128) :: filename_molecule = '12C16O_H2.dat'
-  character(len=128) :: filename_save = 'output.dat'
+  character(len=128) :: dir_transition_rates = ''
+  character(len=128) :: dir_save = ''
+  character(len=128) :: filename_molecule = ''
+  character(len=128) :: filename_save = ''
   logical :: recalculateFreqWithEupElow = .false.
   logical :: iLevel_subtract_one = .false.
   logical :: verbose = .true.
@@ -65,8 +65,8 @@ type :: type_rdxx_cfg
   character(len=128) :: dir_out = ''
   character(len=128) :: filename_out = ''
   !
-  character(len=16) :: solve_method = 'ODE'
-  character(len=16) :: f_occupation_init_method = 'Boltzmann'
+  character(len=32) :: solve_method = ''
+  character(len=32) :: f_occupation_init_method = ''
   !
   logical :: provideLength = .false.
   double precision length_scale
@@ -231,6 +231,7 @@ subroutine do_my_radex(do_init)
           a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS * (4D0 * phy_Pi * phy_GaussFWHM_c)
         beam_area = FWHM_to_area(rdxx_cfg%beam_FWHM_in_arcsec)
         flux_Jy = (Inu_t - r%J_cont_bg) * beam_area / phy_jansky2CGS
+        ! flux_CGS = \int I_\nu d\nu d\Omega
         !
         ilowSav = r%ilow
         iupSav = r%iup

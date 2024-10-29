@@ -466,7 +466,7 @@ subroutine statistic_equil_solve_Newton
   integer IERR, i
   integer, dimension(50) :: IOPT
   !
-  XSCAL = 1D-30
+  XSCAL = 1D-20
   !
   IOPT = 0
   statistic_equil_params%IWORK = 0

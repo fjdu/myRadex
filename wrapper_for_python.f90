@@ -5,18 +5,18 @@ implicit none
 
 logical :: flag_good
 
-integer, parameter :: n_item_column = 21
+integer, parameter :: n_item_column = 22, len_column_names=128, len_molecule_name=32
 
 character(len=64) :: &
     About = 'Author: Fujun Du (fjdu@pmo.ac.cn, fujun.du@gmail.com)'
 
-character(len=128) :: column_names = &
+character(len=len_column_names) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
     // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// &
     'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux_int' // ' ' // 'flux_Jy' //' '// 'beta' //' ' &
     // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu' // ' ' // 'n_crit' // ' ' // 'n_crit_old'
 
-character(len=32) :: molecule_name = ''
+character(len=len_molecule_name) :: molecule_name = ''
 
 contains
 
@@ -32,7 +32,7 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
     f_occupation_init_method, &
     n_levels, n_item, n_transitions, n_partners)
   !
-  use my_radex, only: rdxx_cfg, a_mol_using
+  use my_radex, only: rdxx_cfg, a_mol_using, my_radex_prepare
   !
   character(len=*), intent(in) :: dir_transition_rates, filename_molecule
   double precision, intent(in) :: Tbg
@@ -92,6 +92,7 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   rdxx_cfg%Tbg(1) = Tbg
   !
   if (verbs) then
+    write(*, '("Input path: ", 2A)') trim(dir_transition_rates), trim(filename_molecule)
     write(*, '(A, A)') 'Column names of the output: ', column_names
   end if
   !
@@ -139,8 +140,9 @@ subroutine run_one_params( &
   double precision, intent(out) :: cooling_rate
   !
   type(type_rad_transition) r
-  double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s
+  double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s, flux_Jy
   double precision Inu_t, tau, t1, t2
+  double precision beam_area
   double precision critical_density, critical_density_old
   integer i, iupSav, ilowSav
   logical donotsolve_
@@ -230,7 +232,9 @@ subroutine run_one_params( &
         (2D0 * r%freq**2 * phy_kBoltzmann_CGS)
       flux_K_km_s = Tr * a_mol_using%dv / 1D5 * phy_GaussFWHM_c
       flux_CGS = (Inu_t - r%J_cont_bg) * &
-        a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS
+        a_mol_using%dv * r%freq / phy_SpeedOfLight_CGS * (4D0 * phy_Pi * phy_GaussFWHM_c)
+      beam_area = FWHM_to_area(rdxx_cfg%beam_FWHM_in_arcsec)
+      flux_Jy = (Inu_t - r%J_cont_bg) * beam_area / phy_jansky2CGS
       !
       iupSav = r%iup
       ilowSav = r%ilow
@@ -247,7 +251,7 @@ subroutine run_one_params( &
       data_transitions(:, i) = &
         (/ &
         dble(iupSav), dble(ilowSav), r%Eup, r%freq, r%lambda, Tex, r%tau, Tr, &
-        fup, flow, flux_K_km_s, flux_CGS, r%beta, &
+        fup, flow, flux_K_km_s, flux_CGS, flux_Jy, r%beta, &
         r%J_ave, gup, glow, r%Aul, r%Bul, r%Blu, critical_density, critical_density_old /)
   end do
 end subroutine run_one_params
