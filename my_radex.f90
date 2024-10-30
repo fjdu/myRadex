@@ -128,7 +128,7 @@ subroutine do_my_radex(do_init)
   write(rdxx_cfg%fU, '(2A5, A12, 2A15, 10A12, 2A7, &
             &5A12, A2)') &
     '! iup', 'ilow', 'Eup', 'freq', 'lam', 'Tex', 'tau', 'Tr', &
-    'fup', 'flow', 'flux_K', 'flux_int', 'flux_Jy', 'beta', &
+    'fup', 'flow', 'flux_Kkms', 'flux_int', 'flux_Jy', 'beta', &
     'Jnu', 'gup', 'glow', 'Aul', 'Bul', 'Blu', 'n_crit', 'n_crit_old', 'q'
   write(rdxx_cfg%fU, '(2A5, A12, 2A15, 10A12, 2A7, &
             &5A12, A2)') &
@@ -398,17 +398,33 @@ subroutine my_radex_prepare_molecule
 end subroutine my_radex_prepare_molecule
 
 
-subroutine my_radex_prepare
+
+subroutine my_radex_prepare(loadMoleculeData, makeLUT)
+  logical, intent(in), optional :: loadMoleculeData, makeLUT
+  logical loadMoleculeData_, makeLUT_
   double precision lam_min, lam_max
   integer, parameter :: n_cont_lam = 200
   !
-  !nullify(a_mol_using)
-  allocate(a_mol_using)
+  loadMoleculeData_ = .true.
+  if (present(loadMoleculeData)) then
+    loadMoleculeData_ = loadMoleculeData
+  end if
+  makeLUT_ = .true.
+  if (present(makeLUT)) then
+    makeLUT_ = makeLUT
+  end if
   !
   ! Load the molecular data
-  call load_moldata_LAMBDA(&
-    combine_dir_filename(rdxx_cfg%dir_transition_rates, &
-    rdxx_cfg%filename_molecule), rdxx_cfg%recalculateFreqWithEupElow)
+  if (loadMoleculeData_) then
+    if (associated(a_mol_using)) then
+      call deallocate_a_mol_using()
+    end if
+    allocate(a_mol_using)
+    !
+    call load_moldata_LAMBDA(&
+      combine_dir_filename(rdxx_cfg%dir_transition_rates, &
+      rdxx_cfg%filename_molecule), rdxx_cfg%recalculateFreqWithEupElow)
+  end if
   !
   statistic_equil_params%max_runtime_allowed = rdxx_cfg%max_code_run_time
   statistic_equil_params%rtol = rdxx_cfg%rtol
@@ -432,28 +448,30 @@ subroutine my_radex_prepare
              statistic_equil_params%RWORK(statistic_equil_params%LRW))
   end if
   !
-  lam_min = minval(a_mol_using%rad_data%list%lambda) ! micron
-  lam_max = maxval(a_mol_using%rad_data%list%lambda) ! micron
-  lam_min = lam_min * (1D0 - 10D0 * 1D7/phy_SpeedOfLight_CGS)
-  lam_max = lam_max * (1D0 + 10D0 * 1D7/phy_SpeedOfLight_CGS)
-  !
-  call make_local_cont_lut( &
-    trim(combine_dir_filename(rdxx_cfg%dir_bg, rdxx_cfg%filename_bg)), &
-    rdxx_cfg%provide_bgfile, &
-    rdxx_cfg%Tbg, rdxx_cfg%nTbg, rdxx_cfg%Tbgscaling, &
-    cont_lut_bg, lam_min, lam_max, n_cont_lam)
-  !
-  call make_local_cont_lut( &
-    trim(combine_dir_filename(rdxx_cfg%dir_in, rdxx_cfg%filename_in)), &
-    rdxx_cfg%provide_infile, &
-    rdxx_cfg%Tin, rdxx_cfg%nTin, rdxx_cfg%Tinscaling, &
-    cont_lut_in, lam_min, lam_max, n_cont_lam)
-  !
-  call make_local_cont_lut( &
-    trim(combine_dir_filename(rdxx_cfg%dir_out, rdxx_cfg%filename_out)), &
-    rdxx_cfg%provide_outfile, &
-    rdxx_cfg%Tout, rdxx_cfg%nTout, rdxx_cfg%Toutscaling, &
-    cont_lut_out, lam_min, lam_max, n_cont_lam)
+  if (makeLUT_) then
+    lam_min = minval(a_mol_using%rad_data%list%lambda) ! micron
+    lam_max = maxval(a_mol_using%rad_data%list%lambda) ! micron
+    lam_min = lam_min * (1D0 - 10D0 * 1D7/phy_SpeedOfLight_CGS)
+    lam_max = lam_max * (1D0 + 10D0 * 1D7/phy_SpeedOfLight_CGS)
+    !
+    call make_local_cont_lut( &
+      trim(combine_dir_filename(rdxx_cfg%dir_bg, rdxx_cfg%filename_bg)), &
+      rdxx_cfg%provide_bgfile, &
+      rdxx_cfg%Tbg, rdxx_cfg%nTbg, rdxx_cfg%Tbgscaling, &
+      cont_lut_bg, lam_min, lam_max, n_cont_lam)
+    !
+    call make_local_cont_lut( &
+      trim(combine_dir_filename(rdxx_cfg%dir_in, rdxx_cfg%filename_in)), &
+      rdxx_cfg%provide_infile, &
+      rdxx_cfg%Tin, rdxx_cfg%nTin, rdxx_cfg%Tinscaling, &
+      cont_lut_in, lam_min, lam_max, n_cont_lam)
+    !
+    call make_local_cont_lut( &
+      trim(combine_dir_filename(rdxx_cfg%dir_out, rdxx_cfg%filename_out)), &
+      rdxx_cfg%provide_outfile, &
+      rdxx_cfg%Tout, rdxx_cfg%nTout, rdxx_cfg%Toutscaling, &
+      cont_lut_out, lam_min, lam_max, n_cont_lam)
+  end if
   !
 end subroutine my_radex_prepare
 

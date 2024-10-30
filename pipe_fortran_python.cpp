@@ -70,12 +70,21 @@ void cc_run_one_params(
     int n_levels,
     int n_item,
     int n_transitions,
-    bool donotsolve,
-    int collisioPartnerCrit,
     double *energies,
     double *f_occupations,
     double *data_transitions,
-    double *cooling_rate) {
+    double *cooling_rate,
+    bool donotsolve,
+    int collisioPartnerCrit,
+    double Tbg,
+    double beam_FWHM_in_arcsec,
+    double max_code_run_time,
+    double max_evol_time,
+    double rtol,
+    double atol,
+    std::string solve_method,
+    std::string f_occupation_init_method,
+    std::string geotype) {
 // The memory needed by energies, f_occupations, and data_transitions are assumed to have already been allocated.
 
   c_run_one_params(
@@ -92,10 +101,22 @@ void cc_run_one_params(
     n_levels,
     n_item,
     n_transitions,
-    donotsolve,
-    collisioPartnerCrit,
     energies,
     f_occupations,
     data_transitions,
-    cooling_rate);
+    cooling_rate,
+    donotsolve,
+    collisioPartnerCrit,
+    Tbg,
+    beam_FWHM_in_arcsec,
+    max_code_run_time,
+    max_evol_time,
+    rtol,
+    atol,
+    solve_method.c_str(),
+    f_occupation_init_method.c_str(),
+    geotype.c_str(),
+    solve_method.length(),
+    f_occupation_init_method.length(),
+    geotype.length());
 }

@@ -13,7 +13,7 @@ character(len=64) :: &
 character(len=len_column_names) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
     // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// &
-    'fup' //' '// 'flow' //' '// 'flux_K' //' '// 'flux_int' // ' ' // 'flux_Jy' //' '// 'beta' //' ' &
+    'fup' //' '// 'flow' //' '// 'flux_Kkms' //' '// 'flux_int' // ' ' // 'flux_Jy' //' '// 'beta' //' ' &
     // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu' // ' ' // 'n_crit' // ' ' // 'n_crit_old'
 
 character(len=len_molecule_name) :: molecule_name = ''
@@ -120,9 +120,10 @@ subroutine run_one_params( &
     oH2_density_CGS, pH2_densty_CGS, &
     HII_density_CGS, Electron_density_CGS, &
     n_levels, n_item, n_transitions, &
-    donotsolve, &
-    collisioPartnerCrit, &
-    energies, f_occupations, data_transitions, cooling_rate)
+    energies, f_occupations, data_transitions, cooling_rate, &
+    donotsolve, collisioPartnerCrit, &
+    Tbg, beam_FWHM_in_arcsec, max_code_run_time, max_evol_time, &
+    rtol, atol, solve_method, f_occupation_init_method, geotype)
   !
   use my_radex
   use statistic_equilibrium
@@ -133,11 +134,14 @@ subroutine run_one_params( &
     HII_density_CGS, Electron_density_CGS
   !
   integer, intent(in) :: n_levels, n_item, n_transitions
-  logical, intent(in), optional :: donotsolve
-  integer, intent(in), optional :: collisioPartnerCrit
   double precision, dimension(n_levels), intent(out) :: energies, f_occupations
   double precision, dimension(n_item, n_transitions), intent(out) :: data_transitions
   double precision, intent(out) :: cooling_rate
+  !
+  logical, intent(in), optional :: donotsolve
+  integer, intent(in), optional :: collisioPartnerCrit
+  double precision, intent(in), optional :: Tbg, beam_FWHM_in_arcsec, max_code_run_time, max_evol_time, rtol, atol
+  character(len=*), intent(in), optional :: solve_method, f_occupation_init_method, geotype
   !
   type(type_rad_transition) r
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s, flux_Jy
@@ -145,8 +149,42 @@ subroutine run_one_params( &
   double precision beam_area
   double precision critical_density, critical_density_old
   integer i, iupSav, ilowSav
-  logical donotsolve_
+  logical donotsolve_, makeLUT
   integer iCollPartner
+  !
+  makeLUT = .false.
+  if (present(Tbg)) then
+    if (Tbg .ne. rdxx_cfg%Tbg(1)) then
+      rdxx_cfg%Tbg(1) = Tbg
+      makeLUT = .true.
+    end if
+  end if
+  if (present(beam_FWHM_in_arcsec)) then
+    rdxx_cfg%beam_FWHM_in_arcsec = beam_FWHM_in_arcsec
+  end if
+  if (present(max_code_run_time)) then
+    rdxx_cfg%max_code_run_time = max_code_run_time
+  end if
+  if (present(max_evol_time)) then
+    rdxx_cfg%max_evol_time = max_evol_time
+  end if
+  if (present(rtol)) then
+    rdxx_cfg%rtol = rtol
+  end if
+  if (present(atol)) then
+    rdxx_cfg%atol = atol
+  end if
+  if (present(solve_method)) then
+    rdxx_cfg%solve_method = solve_method
+  end if
+  if (present(f_occupation_init_method)) then
+    rdxx_cfg%f_occupation_init_method = f_occupation_init_method
+  end if
+  if (present(geotype)) then
+    rdxx_cfg%geotype = adjustl(geotype)
+  end if
+  !
+  call my_radex_prepare(.false., makeLUT)
   !
   rdxx_cfg%nTkin   = 1
   rdxx_cfg%ndv     = 1
@@ -307,8 +345,8 @@ subroutine run_one_params_geometry( &
     H2_density_CGS, HI_density_CGS, &
     oH2_density_CGS, pH2_densty_CGS, &
     HII_density_CGS, Electron_density_CGS, &
-    n_levels, n_item, n_transitions, donotsolve_, iCollPartner, &
-    energies, f_occupations, data_transitions, cooling_rate)
+    n_levels, n_item, n_transitions, &
+    energies, f_occupations, data_transitions, cooling_rate, donotsolve_, iCollPartner)
 end subroutine run_one_params_geometry
 
 

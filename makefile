@@ -46,7 +46,9 @@ cflags = $(lflags) -c -cpp $(eq_solver_switch)
 
 OBJSWRAPPER=linalg_nleq1.o my_radex.o nleq1.o opkda1.o opkda2.o opkdmain.o statistic_equilibrium.o sub_global_variables.o sub_trivials.o wnorm.o zibconst.o zibmon.o zibsec.o wrapper_for_python.o wrapper_for_cython.o pipe_fortran_python.o
 
-cython_wrapper: setup.py wrapper_for_cython.pyx $(MYRADEX_LIB)
+cython_wrapper: myRadex.*.so
+
+myRadex.*.so: setup.py wrapper_for_cython.pyx $(MYRADEX_LIB)
 	$(PYTHON) setup.py build_ext --inplace
 
 $(MYRADEX_LIB): $(OBJSWRAPPER)

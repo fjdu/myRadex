@@ -6,10 +6,10 @@ extern "C" {
 //char c_column_names[128], c_molecule_name[128];
 
 void c_config(
-  const char* dir_transition_rates,
-  const char* filename_molecule,
-  const char* solve_method,
-  const char* f_occupation_init_method,
+  const char *dir_transition_rates,
+  const char *filename_molecule,
+  const char *solve_method,
+  const char *f_occupation_init_method,
   char* o_column_names,
   char* o_molecule_name,
   int len1, int len2, int len3, int len4,
@@ -29,7 +29,6 @@ void c_config(
   int *len5,
   int *len6);
 
-
 void c_run_one_params(
     double Tkin,
     double dv_CGS,
@@ -44,12 +43,24 @@ void c_run_one_params(
     int n_levels,
     int n_item,
     int n_transitions,
-    bool donotsolve,
-    int collisioPartnerCrit,
     double *energies,
     double *f_occupations,
     double *data_transitions,
-    double *cooling_rate);
+    double *cooling_rate,
+    bool donotsolve,
+    int collisioPartnerCrit,
+    double Tbg,
+    double beam_FWHM_in_arcsec,
+    double max_code_run_time,
+    double max_evol_time,
+    double rtol,
+    double atol,
+    const char *solve_method,
+    const char *f_occupation_init_method,
+    const char *geotype,
+    int len3,
+    int len4,
+    int len5);
 
 }
 
@@ -92,9 +103,18 @@ void cc_run_one_params(
     int n_levels,
     int n_item,
     int n_transitions,
-    bool donotsolve,
-    int collisioPartnerCrit,
     double *energies,
     double *f_occupations,
     double *data_transitions,
-    double *cooling_rate);
+    double *cooling_rate,
+    bool donotsolve,
+    int collisioPartnerCrit,
+    double Tbg,
+    double beam_FWHM_in_arcsec,
+    double max_code_run_time,
+    double max_evol_time,
+    double rtol,
+    double atol,
+    const std::string solve_method,
+    const std::string f_occupation_init_method,
+    const std::string geotype);

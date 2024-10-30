@@ -47,12 +47,21 @@ cdef extern from 'pipe_fortran_python.hpp':
     int n_levels,
     int n_item,
     int n_transitions,
-    bool donotsolve,
-    int collisioPartnerCrit,
     double *energies,
     double *f_occupations,
     double *data_transitions,
-    double *cooling_rate)
+    double *cooling_rate,
+    bool donotsolve,
+    int collisioPartnerCrit,
+    double Tbg,
+    double beam_FWHM_in_arcsec,
+    double max_code_run_time,
+    double max_evol_time,
+    double rtol,
+    double atol,
+    const string solve_method,
+    const string f_occupation_init_method,
+    const string geotype)
 
 def str2cppstr(s):
     if type(s) == str:
@@ -70,24 +79,34 @@ cdef class MyRadexModel:
       object column_names, molecule_name
       double [:] energies_view, f_occupations_view
       double [:,:] data_transitions_view
+      object Tbg, beam_FWHM_in_arcsec, max_code_run_time, max_evol_time, rtol, atol, solve_method, f_occupation_init_method
 
   def __init__(self,
       dir_transition_rates=None,
       filename_molecule=None,
-      solve_method=None,
-      f_occupation_init_method=None,
-      Tbg=None,
-      beam_FWHM_in_arcsec=None,
-      verbose=None,
-      recalculateFreqWithEupElow=None,
-      iLevel_subtract_one=None,
-      max_code_run_time=None,
-      max_evol_time=None,
-      rtol=None,
-      atol=None):
+      solve_method='ODE',
+      f_occupation_init_method='Boltzmann',
+      Tbg=2.725,
+      beam_FWHM_in_arcsec=30.0,
+      verbose=True,
+      recalculateFreqWithEupElow=False,
+      iLevel_subtract_one=False,
+      max_code_run_time=10.0,
+      max_evol_time=3.14e12,
+      rtol=1e-4,
+      atol=1e-14):
 
       if not dir_transition_rates.endswith('/'):
         dir_transition_rates += '/'
+
+      self.Tbg = Tbg
+      self.beam_FWHM_in_arcsec = beam_FWHM_in_arcsec
+      self.max_code_run_time = max_code_run_time
+      self.max_evol_time = max_evol_time
+      self.rtol = rtol
+      self.atol = atol
+      self.solve_method = solve_method
+      self.f_occupation_init_method = f_occupation_init_method
 
       cc_config(str2cppstr(dir_transition_rates),
           str2cppstr(filename_molecule),
@@ -124,11 +143,23 @@ cdef class MyRadexModel:
 
   def run_one_params(self,
       Tkin=None, dv_CGS=None,
-      dens_X_CGS=None, Ncol_X_CGS=None,
-      H2_density_CGS=None, HI_density_CGS=None,
-      oH2_density_CGS=None, pH2_densty_CGS=None,
-      HII_density_CGS=None, Electron_density_CGS=None,
-      donotsolve=None, collisioPartnerCrit=None):
+      dens_X_CGS=1e0, Ncol_X_CGS=None,
+      H2_density_CGS=0e0, HI_density_CGS=0e0,
+      oH2_density_CGS=0e0, pH2_densty_CGS=0e0,
+      HII_density_CGS=0e0, Electron_density_CGS=0e0,
+      donotsolve=False, collisioPartnerCrit=1,
+      Tbg=None, beam_FWHM_in_arcsec=None, max_code_run_time=None, max_evol_time=None,
+      rtol=None, atol=None, solve_method=None, f_occupation_init_method=None, geotype=None):
+
+      smeth = str2cppstr(self.solve_method)
+      if solve_method:
+        smeth = str2cppstr(solve_method)
+      fimeth = str2cppstr(self.f_occupation_init_method)
+      if f_occupation_init_method:
+        fimeth = str2cppstr(f_occupation_init_method)
+      gtp = str2cppstr('')
+      if geotype:
+        gtp = str2cppstr(geotype)
 
       cc_run_one_params(
         Tkin,
@@ -144,10 +175,19 @@ cdef class MyRadexModel:
         self.n_levels,
         self.n_item,
         self.n_transitions,
-        donotsolve,
-        collisioPartnerCrit,
         &self.energies_view[0],
         &self.f_occupations_view[0],
         &self.data_transitions_view[0][0],
-        &self.cooling_rate)
+        &self.cooling_rate,
+        donotsolve,
+        collisioPartnerCrit,
+        Tbg or self.Tbg,
+        beam_FWHM_in_arcsec or self.beam_FWHM_in_arcsec,
+        max_code_run_time or self.max_code_run_time,
+        max_evol_time or self.max_evol_time,
+        rtol or self.rtol,
+        atol or self.atol,
+        smeth,
+        fimeth,
+        gtp)
       return

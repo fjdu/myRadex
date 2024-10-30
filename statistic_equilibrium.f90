@@ -105,7 +105,7 @@ type :: type_continuum_lut
   double precision, dimension(:), allocatable :: lam, alpha, J
 end type type_continuum_lut
 
-type(type_molecule_energy_set), pointer :: a_mol_using
+type(type_molecule_energy_set), pointer :: a_mol_using => null()
 
 type(type_statistic_equil_params) statistic_equil_params
 
@@ -348,6 +348,20 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   ! end do
 end subroutine load_moldata_LAMBDA
 
+
+
+subroutine deallocate_a_mol_using()
+  if (associated(a_mol_using)) then
+    deallocate(a_mol_using%rad_data%list)
+    deallocate(a_mol_using%colli_data%list)
+    deallocate(a_mol_using%level_list, &
+               a_mol_using%f_occupation, &
+               a_mol_using%rad_data, &
+               a_mol_using%colli_data)
+    deallocate(a_mol_using)
+    nullify(a_mol_using)
+  end if
+end subroutine deallocate_a_mol_using
 
 
 subroutine statistic_equil_solve
@@ -656,6 +670,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
         dbeta_dtau = tmp * (1D0/tau + 1D0/(3D0*tau*tau)) - 1D0/(3D0*tau*tau)
       end if
     case default
+      ! write(*,*) 'Using default geotype: beta=(1-exp(-t))/t'
       if (tt .le. const_small_tau) then
         beta = 1D0
         dbeta_dtau = -0.5D0
