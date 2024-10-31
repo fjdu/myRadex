@@ -488,7 +488,7 @@ subroutine statistic_equil_solve_Newton
   !
   IOPT(3) = 1 ! JACGEN
   IOPT(11) = 3 ! MPRERR
-  IOPT(13) = 3 ! MPRMON
+  IOPT(13) = 2 ! MPRMON
   IOPT(31) = 4 ! NONLIN
   IOPT(32) = 0 ! 1:Broyden
   IOPT(33) = 0 ! 0:Damping
