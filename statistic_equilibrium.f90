@@ -458,9 +458,9 @@ subroutine statistic_equil_solve
       statistic_equil_params%is_good = .false.
     end if
     tscal = a_mol_using%f_occupation(i)/(abs(statistic_equil_params%RWORK(i))+1D-50)
-    if ((a_mol_using%f_occupation(i) .ge. statistic_equil_params%ATOL) .and. &
+    if ((a_mol_using%f_occupation(i) .ge. 1D2*statistic_equil_params%ATOL) .and. &
         (tscal .le. 1D-4*statistic_equil_params%t_max)) then
-      write(*, '(A, I4, 3ES12.2)') 'Not yet equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
     end if
     if (a_mol_using%f_occupation(i) .lt. 0D0) then
       a_mol_using%f_occupation(i) = 0D0
@@ -536,9 +536,9 @@ subroutine statistic_equil_solve_Newton
     end if
     tscal = a_mol_using%f_occupation(i)/(abs(statistic_equil_params%RWORK(i))+1D-50)
         
-    if ((a_mol_using%f_occupation(i) .ge. statistic_equil_params%ATOL) .and. &
+    if ((a_mol_using%f_occupation(i) .ge. 1D2*statistic_equil_params%ATOL) .and. &
         (tscal .le. 1D-4*statistic_equil_params%t_max)) then
-      write(*, '(A, I4, 3ES12.2)') 'Not yet equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
     end if
   end do
 end subroutine statistic_equil_solve_Newton
