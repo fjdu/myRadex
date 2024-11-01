@@ -80,10 +80,6 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   else
     write(*, '(A)') "f_occupation_init_method not provided"
   end if
-  if (verbs) then
-    write(*, '(A, A)') "Using solve_method: ", rdxx_cfg%solve_method
-    write(*, '(A, A)') "Using f_occupation_init_method: ", rdxx_cfg%f_occupation_init_method
-  end if
   !
   rdxx_cfg%dir_transition_rates = dir_transition_rates
   rdxx_cfg%filename_molecule = filename_molecule
@@ -106,9 +102,6 @@ subroutine config_basic(dir_transition_rates, filename_molecule, &
   !
   if (verbs) then
     write(*, '(A, A)') 'Molecule name: ', molecule_name
-    write(*, '(A, I10)') 'Number of levels: ', n_levels
-    write(*, '(A, I10)') 'Number of columns: ', n_item
-    write(*, '(A, I10)') 'Number of transitions: ', n_transitions
   end if
 end subroutine config_basic
 

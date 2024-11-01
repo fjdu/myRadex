@@ -285,7 +285,7 @@ subroutine my_radex_prepare_molecule
   integer i
   !
   if (rdxx_cfg%verbose) then
-    write(*,*) 'Using geotype:"', rdxx_cfg%geotype, '"'
+    write(*, '(2A)') 'Using geotype: ', rdxx_cfg%geotype
   end if
   a_mol_using%geotype = rdxx_cfg%geotype ! Geometric type
   !

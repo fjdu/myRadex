@@ -192,7 +192,7 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   read(fU,'(A1)') strtmp
   read(fU, strfmt_int_long) a_mol_using%n_level
   read(fU,'(A1)') strtmp
-  write(*,*) 'Number of energy levels:', a_mol_using%n_level
+  write(*, '(A,I6)') 'Number of energy levels:', a_mol_using%n_level
   allocate(a_mol_using%level_list(a_mol_using%n_level), &
            a_mol_using%f_occupation(a_mol_using%n_level))
   do i=1, a_mol_using%n_level
@@ -206,7 +206,7 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   allocate(a_mol_using%rad_data)
   read(fU,'(A1)') strtmp
   read(fU, strfmt_int_long) a_mol_using%rad_data%n_transition
-  write(*,*) 'Number of radiative transitions:', a_mol_using%rad_data%n_transition
+  write(*,'(A,I6)') 'Number of radiative transitions:', a_mol_using%rad_data%n_transition
   read(fU,'(A1)') strtmp
   allocate(a_mol_using%rad_data%list(a_mol_using%rad_data%n_transition))
   do i=1, a_mol_using%rad_data%n_transition
@@ -258,7 +258,7 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   ! Get the number of collisional partners
   read(fU,'(A1)') strtmp
   read(fU, strfmt_int_long) a_mol_using%colli_data%n_partner
-  write(*,*) 'Number of collisional partners:', a_mol_using%colli_data%n_partner
+  write(*,'(A,I6)') 'Number of collisional partners:', a_mol_using%colli_data%n_partner
   allocate(a_mol_using%colli_data%list(a_mol_using%colli_data%n_partner))
   !
   do i=1, a_mol_using%rad_data%n_transition
@@ -276,22 +276,22 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
     else if (a_mol_using%colli_data%list(i)%name_partner .eq. 'with') then
       a_mol_using%colli_data%list(i)%name_partner = str_split(5)
     end if
-    write(*,*) 'Name of collisional partner:', i, a_mol_using%colli_data%list(i)%name_partner
+    write(*, '(A, I6, " ", A)') 'Collisional partner:', i, a_mol_using%colli_data%list(i)%name_partner
     ! Get the number of transitions and temperatures
     read(fU,'(A1)') strtmp
     read(fU, strfmt_int_long) a_mol_using%colli_data%list(i)%n_transition
-    write(*,*) 'Number of collisional transitions:', i, a_mol_using%colli_data%list(i)%n_transition
+    write(*,'(A,2I6)') 'Number of collisional transitions:', i, a_mol_using%colli_data%list(i)%n_transition
     read(fU,'(A1)') strtmp
     read(fU, strfmt_int_long) a_mol_using%colli_data%list(i)%n_T
-    write(*,*) 'Number of temperatures:', i, a_mol_using%colli_data%list(i)%n_T
+    write(*,'(A,2I6)') 'Number of temperatures:', i, a_mol_using%colli_data%list(i)%n_T
     !
     ! Name too long...
     n_transition_ = a_mol_using%colli_data%list(i)%n_transition
     n_T_ = a_mol_using%colli_data%list(i)%n_T
     if ((n_T_+3) .gt. nstr_split) then
-      write(*,*) 'The number of different temperatures is too large!'
-      write(*,*) 'nstr_split = ', nstr_split
-      write(*,*) 'Change nstr_split of the source code to a higher value.'
+      write(*,'(A)') 'The number of different temperatures is too large!'
+      write(*,'(A, I6)') 'nstr_split = ', nstr_split
+      write(*,'(A)') 'Change nstr_split of the source code to a higher value.'
       stop
     end if
     !
@@ -460,8 +460,7 @@ subroutine statistic_equil_solve
     tscal = a_mol_using%f_occupation(i)/(abs(statistic_equil_params%RWORK(i))+1D-50)
     if ((a_mol_using%f_occupation(i) .ge. statistic_equil_params%ATOL) .and. &
         (tscal .le. 1D-4*statistic_equil_params%t_max)) then
-      write(*, '(/A)') 'Equilibrium probably not reached.'
-      write(*, *) i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      write(*, '(A, I4, 3ES12.2)') 'Not yet equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
     end if
     if (a_mol_using%f_occupation(i) .lt. 0D0) then
       a_mol_using%f_occupation(i) = 0D0
@@ -480,7 +479,7 @@ subroutine statistic_equil_solve_Newton
   integer IERR, i
   integer, dimension(50) :: IOPT
   !
-  XSCAL = 1D-20
+  XSCAL = 1D-30
   !
   IOPT = 0
   statistic_equil_params%IWORK = 0
@@ -488,7 +487,7 @@ subroutine statistic_equil_solve_Newton
   !
   IOPT(3) = 1 ! JACGEN
   IOPT(11) = 3 ! MPRERR
-  IOPT(13) = 2 ! MPRMON
+  IOPT(13) = 1 ! MPRMON
   IOPT(31) = 4 ! NONLIN
   IOPT(32) = 0 ! 1:Broyden
   IOPT(33) = 0 ! 0:Damping
@@ -539,8 +538,7 @@ subroutine statistic_equil_solve_Newton
         
     if ((a_mol_using%f_occupation(i) .ge. statistic_equil_params%ATOL) .and. &
         (tscal .le. 1D-4*statistic_equil_params%t_max)) then
-      write(*, '(/A)') 'Equilibrium probably not reached.'
-      write(*, *) i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      write(*, '(A, I4, 3ES12.2)') 'Not yet equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
     end if
   end do
 end subroutine statistic_equil_solve_Newton
