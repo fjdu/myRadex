@@ -62,6 +62,8 @@ void c_run_one_params(
     int len4,
     int len5);
 
+void c_get_flag(bool *flag);
+
 }
 
 
@@ -118,3 +120,6 @@ void cc_run_one_params(
     const std::string solve_method,
     const std::string f_occupation_init_method,
     const std::string geotype);
+
+
+void cc_get_flag(bool *flag);

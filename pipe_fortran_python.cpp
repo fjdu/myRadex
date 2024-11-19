@@ -120,3 +120,8 @@ void cc_run_one_params(
     f_occupation_init_method.length(),
     geotype.length());
 }
+
+
+void cc_get_flag(bool *flag) {
+  c_get_flag(flag);
+}

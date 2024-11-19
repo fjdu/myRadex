@@ -63,6 +63,8 @@ cdef extern from 'pipe_fortran_python.hpp':
     const string f_occupation_init_method,
     const string geotype)
 
+  void cc_get_flag(bool *flag_good)
+
 def str2cppstr(s):
     if type(s) == str:
         return s.encode('utf-8')
@@ -80,6 +82,7 @@ cdef class MyRadexModel:
       double [:] energies_view, f_occupations_view
       double [:,:] data_transitions_view
       object Tbg, beam_FWHM_in_arcsec, max_code_run_time, max_evol_time, rtol, atol, solve_method, f_occupation_init_method
+      bool flag_good
 
   def __init__(self,
       dir_transition_rates=None,
@@ -107,6 +110,7 @@ cdef class MyRadexModel:
       self.atol = atol
       self.solve_method = solve_method
       self.f_occupation_init_method = f_occupation_init_method
+      self.flag_good = True
 
       cc_config(str2cppstr(dir_transition_rates),
           str2cppstr(filename_molecule),
@@ -190,4 +194,5 @@ cdef class MyRadexModel:
         smeth,
         fimeth,
         gtp)
+      cc_get_flag(&self.flag_good)
       return

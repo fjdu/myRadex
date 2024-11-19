@@ -479,6 +479,7 @@ subroutine statistic_equil_solve_Newton
   integer IERR, i
   integer, dimension(50) :: IOPT
   !
+  statistic_equil_params%is_good = .true.
   XSCAL = 1D-10
   !
   IOPT = 0
@@ -520,6 +521,9 @@ subroutine statistic_equil_solve_Newton
   else
     write(*, '("Error code: ", I4)') IERR
     write(*,*) IOPT
+  end if
+  if (IERR .ne. 0) then
+    statistic_equil_params%is_good = .false.
   end if
   !
   a_mol_using%f_occupation = a_mol_using%f_occupation / sum(a_mol_using%f_occupation)

@@ -97,7 +97,7 @@ subroutine f_run_one_params(&
     Tbg, beam_FWHM_in_arcsec, max_code_run_time, max_evol_time, &
     rtol, atol, solve_method, f_occupation_init_method, geotype, len3, len4, len5) bind(C, name="c_run_one_params")
 
-  use myradex_wrapper, only: run_one_params
+  use myradex_wrapper, only: run_one_params, flag_good
 
   real(kind=c_double), intent(in), value :: Tkin, dv_CGS, dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
@@ -129,5 +129,13 @@ subroutine f_run_one_params(&
     rtol, atol, s3, s4, s5)
 
 end subroutine f_run_one_params
+
+
+subroutine f_get_flag(flag) bind(C, name="c_get_flag")
+  use myradex_wrapper, only: flag_good
+  logical(kind=c_bool), intent(out) :: flag
+  flag = flag_good
+end subroutine f_get_flag
+
 
 end module wrapper_for_cython
