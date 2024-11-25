@@ -8,6 +8,7 @@ void  cc_config(
   const std::string f_occupation_init_method,
   std::string& o_column_names,
   std::string& o_molecule_name,
+  std::vector<std::string> *sQnum_s,
   double tbg,
   double beam_FWHM_in_arcsec,
   bool verbose,
@@ -23,7 +24,9 @@ void  cc_config(
   int *n_partners,
   int *len5,
   int *len6) {
+
   char s1[256]="", s2[128]="";
+
   c_config(
     dir_transition_rates.c_str(),
     filename_molecule.c_str(),
@@ -52,7 +55,16 @@ void  cc_config(
     len6);
   o_column_names = std::string(s1);
   o_molecule_name = std::string(s2);
-  //std::cout << c_column_names << std::endl;
+
+  char** s3 = new char*[*n_levels];
+  for (int i=0; i<*n_levels; ++i) {
+    s3[i] = nullptr;
+  }
+
+  c_get_sQum_s(s3, *n_levels);
+  for (int i=0;i<*n_levels;++i) {
+    (*sQnum_s).push_back(std::string(s3[i]));
+  }
 }
 
 

@@ -17,6 +17,7 @@ cdef extern from 'pipe_fortran_python.hpp':
     const string f_occupation_init_method,
     string& column_names,
     string& molecule_name,
+    vector[string] *sQnum_s,
     double tbg,
     double beam_FWHM_in_arcsec,
     bool verbose,
@@ -81,6 +82,7 @@ cdef class MyRadexModel:
       object column_names, molecule_name
       double [:] energies_view, f_occupations_view
       double [:,:] data_transitions_view
+      vector[string] qnum_s
       object Tbg, beam_FWHM_in_arcsec, max_code_run_time, max_evol_time, rtol, atol, solve_method, f_occupation_init_method
       bool flag_good
 
@@ -118,6 +120,7 @@ cdef class MyRadexModel:
           str2cppstr(f_occupation_init_method),
           self.c_column_names,
           self.c_molecule_name,
+          &self.qnum_s,
           Tbg,
           beam_FWHM_in_arcsec,
           verbose,

@@ -1,6 +1,6 @@
 **What's new**
 
-- 2024-11-18: `Cython`, instead of `f2py`, is used to generate the python wrapper.  For this to work you will need to have a recent version of `Cython`, which is likely already installed if you use `anaconda`.  In case not please follow the [Installing Cython](https://cython.readthedocs.io/en/stable/src/quickstart/install.html).  Examples include a [jupyter notebook](2024-11-18-myradex-with-cython-example.ipynb) and two python scripts [example-1.py](example-1.py) and [example-2.py](example-2.py). The `f2py` version may still work, but sometimes it is hard to compile successfully for some unknown reasons.
+- 2024-11-18: `Cython`, instead of `f2py`, is used to generate the python wrapper.  For this to work you will need to have a recent version of `Cython`, which is likely already installed if you use `anaconda`.  In case not please follow [Installing Cython](https://cython.readthedocs.io/en/stable/src/quickstart/install.html).  Examples include a [jupyter notebook](2024-11-18-myradex-with-cython-example.ipynb) and two python scripts [example-1.py](example-1.py) and [example-2.py](example-2.py). The `f2py` version may still work, but sometimes it is hard to compile successfully for some unknown reasons.
 
 - 2023-03-30: Now the `collisioPartnerCrit` parameter can be used to specify which collision partner (1-based) will have critical densities saved in the output.
 
@@ -61,7 +61,12 @@ To use this code, you first need to compile it using the `makefile` (the executa
 ```
 and you will get the results.
 
-A python wrapper is also included.  To make the wrapper, run `make wrapper` in the command line.
+A python wrapper is included.
+
+- To make the wrapper with `Cython`, run `make cython_wrapper` in the command line.
+- To make the wrapper with `f2py`, run `make wrapper` in the command line.
+
+
 For its usage, see [this Jupyter notebook](https://github.com/fjdu/myRadex/blob/master/example.ipynb).
 The wrapper is preliminary; not all the functionalities in the Fortran source code are included in the wrapper (though usually they are not needed).
 

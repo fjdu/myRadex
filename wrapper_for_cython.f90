@@ -1,8 +1,11 @@
 module wrapper_for_cython
 
-USE, INTRINSIC :: ISO_C_BINDING
+use, intrinsic :: iso_c_binding
+
+use statistic_equilibrium, only: const_len_qnums
 implicit none
 
+character(kind=c_char,len=const_len_qnums), dimension(:), allocatable, target :: sQnum_s
 contains
 
 subroutine copy_char_arr_to_str(src, dest, len)
@@ -27,6 +30,18 @@ subroutine copy_str_to_char_arr(src, dest, len)
     dest(i) = src(i:i)
   end do
 end subroutine copy_str_to_char_arr
+
+
+subroutine copy_charLen_arr_to_cptr_list(src, dest, alen)
+  character(kind=c_char, len=*), dimension(alen), intent(in), target :: src
+  type (c_ptr), dimension(alen), intent(out) :: dest
+  integer, intent(in) :: alen
+  integer i
+  do i=1,alen
+    dest(i) = c_loc(src(i))
+  end do
+end subroutine copy_charLen_arr_to_cptr_list
+
 
 subroutine f_config(&
     dir_transition_rates, &
@@ -83,6 +98,22 @@ subroutine f_config(&
   rdxx_cfg%beam_FWHM_in_arcsec = beam_FWHM_in_arcsec
 
 end subroutine f_config
+
+
+subroutine get_sQum_s(sQnum_cptr, n_levels) bind(C, name="c_get_sQum_s")
+  use statistic_equilibrium, only: a_mol_using
+  type (c_ptr), dimension(*), intent(out) :: sQnum_cptr
+  integer(kind=c_int), intent(in), value :: n_levels
+  integer i
+  if (allocated(sQnum_s)) then
+    deallocate(sQnum_s)
+  end if
+  allocate(sQnum_s(n_levels))
+  do i=1,n_levels
+    sQnum_s(i) = trim(a_mol_using%level_list(i)%sQnum) // C_NULL_CHAR
+  end do
+  call copy_charLen_arr_to_cptr_list(sQnum_s, sQnum_cptr, n_levels)
+end subroutine get_sQum_s
 
 
 subroutine f_run_one_params(&

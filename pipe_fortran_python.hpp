@@ -3,8 +3,6 @@
 
 extern "C" {
 
-//char c_column_names[128], c_molecule_name[128];
-
 void c_config(
   const char *dir_transition_rates,
   const char *filename_molecule,
@@ -64,6 +62,8 @@ void c_run_one_params(
 
 void c_get_flag(bool *flag);
 
+void c_get_sQum_s(char **sQnum_cptr, int n_levels);
+
 }
 
 
@@ -74,6 +74,7 @@ void  cc_config(
   const std::string f_occupation_init_method,
   std::string& o_column_names,
   std::string& o_molecule_name,
+  std::vector<std::string> *sQnum_s,
   double tbg,
   double beam_FWHM_in_arcsec,
   bool verbose,

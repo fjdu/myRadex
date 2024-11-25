@@ -193,7 +193,8 @@ subroutine do_my_radex(do_init)
       case ('Newton', 'NEWTON')
         call statistic_equil_solve_Newton
       case default
-        write(*,*) 'Unknown method: "', trim(rdxx_cfg%solve_method), '"'
+        write(*,*) 'Unknown method: "', trim(rdxx_cfg%solve_method), '". Will use ODE.'
+        call statistic_equil_solve
     end select
     !
     if (statistic_equil_params%is_good) then

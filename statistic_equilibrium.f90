@@ -21,12 +21,12 @@ use trivials
 use phy_const
 implicit none
 
-integer, parameter, private :: const_len_energy_level = 12
-integer, parameter, private :: const_len_molecule = 12
+integer, parameter, public :: const_len_qnums = 16
+integer, parameter, public :: const_len_molecule = 12
 
 
 type :: type_energy_level
-  character(len=const_len_energy_level) :: name_energy
+  character(len=const_len_qnums) :: sQnum
   integer id
   double precision :: energy
   double precision :: weight
@@ -165,6 +165,7 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   character(len=8), parameter :: strfmt_float = '(F16.3)'
   character(len=8), parameter :: strfmt_int = '(I6)'
   character(len=8), parameter :: strfmt_int_long = '(I64)'
+  character(len=8), parameter :: strfmt_str = '(A16)'
   double precision, parameter :: GHz_to_Hz = 1D9
   !
   integer iup, ilow
@@ -200,6 +201,8 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
     call split_str_by_space(strtmp, str_split, nstr_split, nout)
     read(str_split(2), strfmt_float) a_mol_using%level_list(i)%energy
     read(str_split(3), strfmt_float) a_mol_using%level_list(i)%weight
+    read(str_split(4), strfmt_str) a_mol_using%level_list(i)%sQnum
+    a_mol_using%level_list(i)%sQnum = adjustl(a_mol_using%level_list(i)%sQnum)
   end do
   !
   ! Get radiative transitions
