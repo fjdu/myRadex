@@ -116,6 +116,13 @@ subroutine get_sQum_s(sQnum_cptr, n_levels) bind(C, name="c_get_sQum_s")
 end subroutine get_sQum_s
 
 
+subroutine deallocate_sQnum_s() bind(C, name="c_deallocate_sQnum_s")
+  if (allocated(sQnum_s)) then
+    deallocate(sQnum_s)
+  end if
+end subroutine deallocate_sQnum_s
+
+
 subroutine f_run_one_params(&
     Tkin, dv_CGS, &
     dens_X_CGS, Ncol_X_CGS, &

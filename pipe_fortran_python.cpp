@@ -65,6 +65,8 @@ void  cc_config(
   for (int i=0;i<*n_levels;++i) {
     (*sQnum_s).push_back(std::string(s3[i]));
   }
+  delete[] s3;
+  c_deallocate_sQnum_s();
 }
 
 

@@ -49,6 +49,7 @@ OBJSWRAPPER=linalg_nleq1.o my_radex.o nleq1.o opkda1.o opkda2.o opkdmain.o stati
 cython_wrapper: myRadex.*.so
 
 myRadex.*.so: setup.py wrapper_for_cython.pyx $(MYRADEX_LIB)
+	rm ./build/*/myRadex.*.so
 	$(PYTHON) setup.py build_ext --inplace
 
 $(MYRADEX_LIB): $(OBJSWRAPPER)

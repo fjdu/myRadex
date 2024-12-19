@@ -627,6 +627,22 @@ subroutine split_str_by_space(str, str_split, n, nout)
 end subroutine split_str_by_space
 
 
+subroutine join_str_arr(sarr, n, lenS, sSep, sout)
+  integer, intent(in) :: n, lenS
+  character(len=*), intent(in) :: sSep
+  character(len=*), dimension(n), intent(in) :: sarr
+  character(len=lenS), intent(out) :: sout
+  integer i
+  sout = trim(adjustl(sarr(1)))
+  do i=2,n-1
+    sout = trim(sout) // sSep // trim(adjustl(sarr(i)))
+  end do
+  if (n .gt. 1) then
+    sout = trim(sout) // sSep // trim(adjustl(sarr(n)))
+  end if
+end subroutine join_str_arr
+
+
 subroutine read_a_nonempty_row(fU, str, fmtstr, ios)
   integer, intent(in) :: fU
   character(len=*), intent(out) :: str

@@ -8,6 +8,8 @@ a = myRadex.MyRadexModel(
     dir_transition_rates='/Users/fjdu/_o/radex/data/',
     filename_molecule='hco+.dat')
 
+print('Quantum numbers:', a.qnum_s)
+
 a.run_one_params(
     Tkin=20.0, dv_CGS=1e5,
     dens_X_CGS=1e0, Ncol_X_CGS=1e20,

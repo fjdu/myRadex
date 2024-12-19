@@ -21,7 +21,7 @@ use trivials
 use phy_const
 implicit none
 
-integer, parameter, public :: const_len_qnums = 16
+integer, parameter, public :: const_len_qnums = 32
 integer, parameter, public :: const_len_molecule = 12
 
 
@@ -111,6 +111,7 @@ type(type_statistic_equil_params) statistic_equil_params
 
 type(type_continuum_lut) cont_lut_bg, cont_lut_in, cont_lut_out
 
+double precision, parameter :: const_freq_rtol = 1D-6
 
 contains
 
@@ -167,6 +168,9 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   character(len=8), parameter :: strfmt_int_long = '(I64)'
   character(len=8), parameter :: strfmt_str = '(A16)'
   double precision, parameter :: GHz_to_Hz = 1D9
+  double precision freq_from_dE
+  integer nFreq_check
+  integer, parameter :: nFreq_check_disp = 6
   !
   integer iup, ilow
   !
@@ -201,8 +205,7 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
     call split_str_by_space(strtmp, str_split, nstr_split, nout)
     read(str_split(2), strfmt_float) a_mol_using%level_list(i)%energy
     read(str_split(3), strfmt_float) a_mol_using%level_list(i)%weight
-    read(str_split(4), strfmt_str) a_mol_using%level_list(i)%sQnum
-    a_mol_using%level_list(i)%sQnum = adjustl(a_mol_using%level_list(i)%sQnum)
+    call join_str_arr(str_split(4:nout), nout-3, const_len_qnums, ',', a_mol_using%level_list(i)%sQnum)
   end do
   !
   ! Get radiative transitions
@@ -212,6 +215,7 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
   write(*,'(A,I6)') 'Number of radiative transitions:', a_mol_using%rad_data%n_transition
   read(fU,'(A1)') strtmp
   allocate(a_mol_using%rad_data%list(a_mol_using%rad_data%n_transition))
+  nFreq_check = 0
   do i=1, a_mol_using%rad_data%n_transition
     read(fU, strfmt_row) strtmp
     call split_str_by_space(strtmp, str_split, nstr_split, nout)
@@ -224,23 +228,37 @@ subroutine load_moldata_LAMBDA(filename, recalculateFreqWithEupElow)
     iup  = a_mol_using%rad_data%list(i)%iup
     ilow = a_mol_using%rad_data%list(i)%ilow
     !
+    ! The frequency unit in the LAMDA file is in GHz. Now convert to Hz.
+    a_mol_using%rad_data%list(i)%freq = a_mol_using%rad_data%list(i)%freq * GHz_to_Hz
+    !
+    freq_from_dE = phy_SpeedOfLight_CGS * &
+      (a_mol_using%level_list(iup)%energy - a_mol_using%level_list(ilow)%energy)
+    !
+    if (abs(a_mol_using%rad_data%list(i)%freq - freq_from_dE) .ge. &
+        freq_from_dE * const_freq_rtol) then
+      nFreq_check = nFreq_check + 1
+      if (nFreq_check .le. nFreq_check_disp) then
+        write(*,'(A,2I6,3ES19.10)') &
+          'Inconsistent frequency and energy difference. iup,ilow,f,f_dE,err: ',&
+          iup, ilow, a_mol_using%rad_data%list(i)%freq, freq_from_dE, &
+          (a_mol_using%rad_data%list(i)%freq-freq_from_dE)/freq_from_dE
+      end if
+    end if
     if (recalcFreq) then
       ! The frequencies in the LAMDA data file may be inconsistent with the energy levels,
       ! so here I recompute them using the energy differences.  The results are in Hz.
       ! However, note that the energy levels in the LAMDA data file may not be accurate,
       ! so by default this recalculation is NOT done.
-      a_mol_using%rad_data%list(i)%freq = phy_SpeedOfLight_CGS * &
-        (a_mol_using%level_list(iup)%energy - &
-         a_mol_using%level_list(ilow)%energy)
-    else
-      ! The frequency unit in the LAMDA file is in GHz. Now convert to Hz.
-      a_mol_using%rad_data%list(i)%freq = a_mol_using%rad_data%list(i)%freq * GHz_to_Hz
+      a_mol_using%rad_data%list(i)%freq = freq_from_dE
     end if
     a_mol_using%rad_data%list(i)%Eup  = a_mol_using%level_list(iup)%energy * phy_cm_1_2K
     a_mol_using%rad_data%list(i)%Elow = a_mol_using%level_list(ilow)%energy * phy_cm_1_2K
   end do
+  if (nFreq_check .gt. 0) then
+    write(*,'(A, I7)') 'Number of inconsistent frequencies:', nFreq_check
+  end if
   !
-  ! Convert the energy unit into Kelvin from cm-1
+  ! Convert the energy unit into Kelvin from cm-1; this is very important.
   a_mol_using%level_list%energy = a_mol_using%level_list%energy * phy_cm_1_2K
   !
   ! Lambda in micron
@@ -370,7 +388,8 @@ end subroutine deallocate_a_mol_using
 subroutine statistic_equil_solve
   use my_timer
   external stat_equili_ode_f, stat_equili_ode_jac
-  integer i
+  integer i, nNotEqui
+  integer, parameter :: nNotEqui_disp=6
   double precision t, tout, t_step, tscal, edot
   type(atimer) timer
   real time_thisstep, runtime_thisstep, time_laststep, runtime_laststep
@@ -441,6 +460,8 @@ subroutine statistic_equil_solve
     tout = t + t_step
   end do
   !
+  write(*,'(A, ES12.5)') 'Solution finished with t = ', t
+  !
   if (3*statistic_equil_params%NERR .gt. statistic_equil_params%n_record) then
     write(*, '(/A)') 'Errors occurred:'
     write(*, '(2ES12.4, 2I6, /)') t, statistic_equil_params%t_max, &
@@ -454,6 +475,7 @@ subroutine statistic_equil_solve
     t, a_mol_using%f_occupation, &
     statistic_equil_params%RWORK(1:a_mol_using%n_level))
   !
+  nNotEqui = 0
   do i=1, a_mol_using%n_level
     if (a_mol_using%f_occupation(i) .lt. -1D1*statistic_equil_params%ATOL) then
       write(*, '(/A)') 'Negative occupation number occurred.'
@@ -463,12 +485,19 @@ subroutine statistic_equil_solve
     tscal = a_mol_using%f_occupation(i)/(abs(statistic_equil_params%RWORK(i))+1D-50)
     if ((a_mol_using%f_occupation(i) .ge. 1D2*statistic_equil_params%ATOL) .and. &
         (tscal .le. 1D-4*statistic_equil_params%t_max)) then
-      write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      nNotEqui = nNotEqui + 1
+      if (nNotEqui .le. nNotEqui_disp) then
+        write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium. i,y,ydot,tscal(s):', &
+          i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      end if
     end if
     if (a_mol_using%f_occupation(i) .lt. 0D0) then
       a_mol_using%f_occupation(i) = 0D0
     end if
   end do
+  if (nNotEqui .ne. 0) then
+    write(*, '(A,I7)') 'Number of possibly nonequilibrium levels:', nNotEqui
+  end if 
   !
   call calc_energy_derivative(a_mol_using%n_level, a_mol_using%f_occupation, edot)
   write(*,*) 'd/dt \sum \dot{x_i}^2:', edot
@@ -545,7 +574,7 @@ subroutine statistic_equil_solve_Newton
         
     if ((a_mol_using%f_occupation(i) .ge. 1D2*statistic_equil_params%ATOL) .and. &
         (tscal .le. 1D-4*statistic_equil_params%t_max)) then
-      write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium:', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium. i,y,ydot,tscal(s):', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
     end if
   end do
 end subroutine statistic_equil_solve_Newton
@@ -600,10 +629,10 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
   character(len=*), intent(in) :: geotype
   double precision, intent(out) :: beta, dbeta_dtau
   double precision tmp, t1, t2, A, tt
+  double precision, parameter :: LVG_c = 2.34D0 * 0.5D0
   double precision, parameter :: const_small_tau = 1D-6
   double precision, parameter :: const_mid_tau = 5D-1
   double precision, parameter :: const_large_tau = 30D0
-  double precision, parameter :: LVG_c = 2.34D0 * 0.5D0
   !
   tt = abs(tau)
   select case(geotype)
@@ -667,8 +696,8 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
       end if
     case ('slab', 'Slab', 'SLAB')
       if (tt .le. const_small_tau) then
-        beta = 1D0
-        dbeta_dtau = -1.5D0
+        beta = 1D0 - 1.5D0*tau + tau*tau*1.5D0 - tau*tau*tau*9D0/8D0
+        dbeta_dtau = -1.5D0 + tau*3D0 - tau*tau*27D0/8D0
       else
         tmp = exp(-3D0 * tau)
         beta = (1D0 - tmp) / (3D0 * tau)
@@ -677,8 +706,8 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
     case default
       ! write(*,*) 'Using default geotype: beta=(1-exp(-t))/t'
       if (tt .le. const_small_tau) then
-        beta = 1D0
-        dbeta_dtau = -0.5D0
+        beta = 1D0 - 0.5D0*tau + tau*tau/6D0 - tau*tau*tau/24D0
+        dbeta_dtau = -0.5D0 + tau/3D0 - tau*tau/8D0
       else
         tmp = exp(-tau)
         beta = (1D0 - tmp) / tau
@@ -738,7 +767,7 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
   integer NEQ
   double precision t, y(NEQ), ydot(NEQ)
   integer i, j, itmp, iup, ilow, iL, iR
-  double precision nu, J_ave, rtmp, Tkin, Cul, Clu, TL, TR, deltaE, &
+  double precision nu, rtmp, Tkin, Cul, Clu, TL, TR, deltaE, &
     del_nu, alpha, tau, beta, dbeta_dtau
   double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
   double precision jnu, knu
@@ -755,6 +784,7 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
     call get_cont_alpha(cont_lut_in, lambda, cont_alpha, cont_J_in)
     call get_cont_alpha(cont_lut_out, lambda, tmp, cont_J_out)
     !
+    ! Rybicki, Eqs 1.65, 1.73; 1/(\sqrt{2\pi}\sigma)\exp(-x^2/(2\sigma^2))
     t1 = phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol / del_nu
     jnu = y(iup) *  a_mol_using%rad_data%list(i)%Aul
     knu = y(ilow) * a_mol_using%rad_data%list(i)%Blu - &
@@ -764,26 +794,19 @@ subroutine stat_equili_ode_f(NEQ, t, y, ydot)
     !
     call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
     !
-    if ((knu .gt. 1D-30) .or. (knu .lt. -1D-30)) then
-      J_ave = jnu / knu
-    else
-      J_ave = jnu * a_mol_using%length_scale * t1
+    a_mol_using%rad_data%list(i)%J_ave = (cont_J_bg + cont_J_out) * beta + cont_J_in
+    if (beta .ne. 1D0) then
+      a_mol_using%rad_data%list(i)%J_ave = a_mol_using%rad_data%list(i)%J_ave + &
+        (jnu/knu) * (1D0 - beta)
     end if
-    !
-    J_ave = J_ave * (1D0 - beta) + (cont_J_bg + cont_J_out) * beta + cont_J_in
     !
     a_mol_using%rad_data%list(i)%tau = tau
     a_mol_using%rad_data%list(i)%beta = beta
-    a_mol_using%rad_data%list(i)%J_ave = J_ave
     a_mol_using%rad_data%list(i)%J_cont_bg = cont_J_bg
     !
-    rtmp = a_mol_using%rad_data%list(i)%Aul * y(iup) + &
-           a_mol_using%rad_data%list(i)%Bul * J_ave * y(iup) - &
-           a_mol_using%rad_data%list(i)%Blu * J_ave * y(ilow)
+    rtmp = jnu * beta - knu * ((cont_J_bg + cont_J_out) * beta + cont_J_in)
     ydot(iup) = ydot(iup)   - rtmp
     ydot(ilow) = ydot(ilow) + rtmp
-    !write(*, *) rtmp, beta, alpha, t1, knu, y(ilow), y(iup), iup, ilow, i
-    !if (isnan(knu)) stop
   end do
   do i=1, a_mol_using%colli_data%n_partner
     ! Find the T interval
@@ -843,14 +866,10 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
   double precision, dimension(NROWPD, *) :: PD
   integer NEQ
   integer i, j, itmp, iup, ilow, iL, iR
-  double precision nu, J_ave, &
-        Tkin, Cul, Clu, TL, TR, deltaE, del_nu, alpha, tau, beta
+  double precision nu, Tkin, Cul, Clu, TL, TR, deltaE, del_nu, alpha, tau, beta
   double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
-  double precision S, dbeta_dtau, dtau_dy_up, dtau_dy_low, &
-    dJ_ave_dy_up, dJ_ave_dy_low, drtmp_dy_up, drtmp_dy_low, &
-    dS_dy_up, dS_dy_low
-  double precision jnu, knu
-  double precision t1
+  double precision J_c, dbeta_dtau, dtau_dy_up, dtau_dy_low, &
+                   drtmp_dy_up, drtmp_dy_low, jnu, knu, t1
   do j=1,NEQ
     PD(:,j) = 0D0
   end do
@@ -874,19 +893,6 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
     !
     call calc_beta(tau, a_mol_using%geotype, beta, dbeta_dtau)
     !
-    if ((knu .gt. 1D-30) .or. (knu .lt. -1D-30)) then
-      S = jnu / knu
-      dS_dy_up = (a_mol_using%rad_data%list(i)%Aul + &
-                  S * a_mol_using%rad_data%list(i)%Bul) / knu
-      dS_dy_low = -S * a_mol_using%rad_data%list(i)%Blu / knu
-    else
-      S = jnu * a_mol_using%length_scale * t1
-      dS_dy_up = a_mol_using%rad_data%list(i)%Aul * a_mol_using%length_scale * t1
-      dS_dy_low = 0D0
-    end if
-    !
-    J_ave = S * (1D0 - beta) + (cont_J_bg + cont_J_out) * beta + cont_J_in
-    !
     dtau_dy_up = a_mol_using%length_scale * &
                  phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol * &
                  (-a_mol_using%rad_data%list(i)%Bul) / del_nu
@@ -894,16 +900,16 @@ subroutine stat_equili_ode_jac(NEQ, t, y, ML, MU, PD, NROWPD)
                   phy_hPlanck_CGS * nu / (4D0*phy_Pi) * a_mol_using%density_mol * &
                   (a_mol_using%rad_data%list(i)%Blu) / del_nu
     !
-    dJ_ave_dy_up  = -S * dbeta_dtau * dtau_dy_up + dS_dy_up * (1D0 - beta)
-    dJ_ave_dy_low = -S * dbeta_dtau * dtau_dy_low + dS_dy_low * (1D0 - beta)
+    J_c = cont_J_bg + cont_J_out
     !
-    drtmp_dy_up = a_mol_using%rad_data%list(i)%Aul + &
-             a_mol_using%rad_data%list(i)%Bul * J_ave + &
-             (a_mol_using%rad_data%list(i)%Bul * y(iup) - &
-              a_mol_using%rad_data%list(i)%Blu * y(ilow)) * dJ_ave_dy_up
-    drtmp_dy_low = -a_mol_using%rad_data%list(i)%Blu * J_ave + &
-             (a_mol_using%rad_data%list(i)%Bul * y(iup) - &
-              a_mol_using%rad_data%list(i)%Blu * y(ilow)) * dJ_ave_dy_low
+    drtmp_dy_up = a_mol_using%rad_data%list(i)%Aul * beta + &
+                  jnu * dbeta_dtau * dtau_dy_up + &
+                  a_mol_using%rad_data%list(i)%Bul * (J_c * beta + cont_J_in) - &
+                  knu * J_c * dbeta_dtau * dtau_dy_up
+    drtmp_dy_low = jnu * dbeta_dtau * dtau_dy_low - &
+                   a_mol_using%rad_data%list(i)%Blu * (J_c * beta + cont_J_in) - &
+                   knu * J_c * dbeta_dtau * dtau_dy_low
+    !
     PD(iup,  iup)  = PD(iup,  iup)  - drtmp_dy_up
     PD(ilow, iup)  = PD(ilow, iup)  + drtmp_dy_up
     PD(iup,  ilow) = PD(iup,  ilow) - drtmp_dy_low
@@ -966,7 +972,7 @@ subroutine calc_critical_density_for_one_transition(iTran, tau)
   double precision, intent(in) :: tau
   !
   integer i, icp, ict, itmp, iup_rad, ilow_rad, iup_col, ilow_col, iL, iR
-  double precision nu, J_ave, Tkin, Cul, Clu, TL, TR, deltaE, &
+  double precision nu, Tkin, Cul, Clu, TL, TR, deltaE, &
     del_nu, alpha, beta, dbeta_dtau
   double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
   double precision jnu, knu
@@ -1050,7 +1056,7 @@ subroutine calc_critical_density_old_def_for_one_transition(iTran, tau)
   integer, intent(in) :: iTran
   double precision, intent(in) :: tau
   integer i, icp, ict, itmp, iup_rad, ilow_rad, iup_col, ilow_col, iL, iR
-  double precision nu, J_ave, Tkin, Cul, Clu, TL, TR, deltaE, &
+  double precision nu, Tkin, Cul, Clu, TL, TR, deltaE, &
     del_nu, alpha, beta, dbeta_dtau
   double precision lambda, cont_alpha, cont_J_bg, cont_J_in, cont_J_out, tmp
   double precision jnu, knu

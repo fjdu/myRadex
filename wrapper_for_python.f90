@@ -224,7 +224,7 @@ subroutine run_one_params( &
       write(*,*) 'Nothing is done because of unknown solving method: ', trim(rdxx_cfg%solve_method)
     end if
   end if
-  write(*,'(A//)') 'Finish solving...'
+  write(*,'(A)') 'Calculating cooling rate...'
   call calc_cooling_rate
   !
   flag_good = statistic_equil_params%is_good
@@ -237,6 +237,7 @@ subroutine run_one_params( &
   rdxx_cfg%freqmin = 1D-99
   rdxx_cfg%freqmax = 1D99
   !
+  write(*,'(A)') 'Organizing the results...'
   do i=1, n_transitions
       r = a_mol_using%rad_data%list(i)
       if ((r%freq .lt. rdxx_cfg%freqmin) .or. &

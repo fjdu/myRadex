@@ -97,9 +97,57 @@ cdef class MyRadexModel:
       recalculateFreqWithEupElow=False,
       iLevel_subtract_one=False,
       max_code_run_time=10.0,
-      max_evol_time=3.14e12,
+      max_evol_time=3.15e12,
       rtol=1e-4,
       atol=1e-14):
+      '''
+      Initialize the code.
+
+      The most important thing done in this step is to load the transition data file.
+      Many other parameters (such as `rtol`, `atol`) can be adjusted when calling `run_one_params`.
+
+      Parameters
+      ----------
+      dir_transition_rates: str
+          The directory containing the transition data file.
+      filename_molecule: str
+          The filename of the transition data file.
+      solve_method: str, optional
+          The method to use for solving the statistical equilibrium problem.
+          Possible values: 'ODE', 'Newton'
+          Default: 'ODE'
+      f_occupation_init_method: str, optional
+          The method to use for initializing the occupation fractions.
+          Possible values: 'Boltzmann', 'Random'
+          Default: 'Boltzmann'
+      Tbg: float, optional
+          Background temperature.
+          Default: 2.725 (= T_cmb)
+      beam_FWHM_in_arcsec: float, optional
+          Beam full-width-at-half-maximum, in arcsec.
+          Default: 30.0
+      verbose: bool, optional
+          Whether to print running messages in the terminal screen.
+          Default: True
+      recalculateFreqWithEupElow: bool, optional
+          Whether to recalculate the transition frequencies using the Eup and Elow in the data file.
+          Default: False
+      iLevel_subtract_one: bool, optional
+          Whether to subtract the energy level numbers by one (to meet the Python convention).
+          Default: False
+      max_code_run_time: float, optional
+          Max code run time for one model run (only for the ODE method).
+          Default: 10.0 seconds
+      max_evol_time: float, optional
+          Max evolution time when solving with the ODE approach
+          Default: 3.15e12 seconds (= 1e5 yr)
+      rtol: float, optional
+          Relative tolerance of the solution
+          Default: 1e-4
+      atol: float, optional
+          Absolute tolerance of the solution
+          Default: 1e-14
+      '''
 
       if not dir_transition_rates.endswith('/'):
         dir_transition_rates += '/'
@@ -149,14 +197,86 @@ cdef class MyRadexModel:
 
 
   def run_one_params(self,
-      Tkin=None, dv_CGS=None,
-      dens_X_CGS=1e0, Ncol_X_CGS=None,
+      Tkin=None, dv_FWHM_CGS=None, dv_CGS=None,
+      dens_X_CGS=1e0, Ncol_X_CGS=None, geotype='slab',
       H2_density_CGS=0e0, HI_density_CGS=0e0,
       oH2_density_CGS=0e0, pH2_densty_CGS=0e0,
       HII_density_CGS=0e0, Electron_density_CGS=0e0,
       donotsolve=False, collisioPartnerCrit=1,
       Tbg=None, beam_FWHM_in_arcsec=None, max_code_run_time=None, max_evol_time=None,
-      rtol=None, atol=None, solve_method=None, f_occupation_init_method=None, geotype=None):
+      rtol=None, atol=None, solve_method=None, f_occupation_init_method=None):
+      '''
+      Run a model for one set of parameters.
+
+      Parameters
+      ----------
+      Tkin: float
+          Kinetic temperature, in K
+      dv_FWHM_CGS: float
+          Velocity FWHM, in cm/s
+      dv_CGS: float, obsolete
+          The same as dv_FWHM_CGS.
+      dens_X_CGS: float, optional
+          Volumn density of the molecule under study, in cm^-3.
+          This parameter is not essential.
+          The code use this density and its column density to get a length scale.
+          Default: 1.0
+      Ncol_X_CGS: float
+          Column density of the molecule under study, in cm^-2.
+      geotype: str, optional
+          Geometric type of the model.
+          Default: 'slab'
+      H2_density_CGS: float, optional
+          The density of H2 molecule, in cm^-3.
+          Default: 0
+      HI_density_CGS: float, optional
+          The density of atomic H, in cm^-3.
+          Default: 0
+      oH2_density_CGS: float, optional
+          The density of ortho H2, in cm^-3.
+          Default: 0
+      pH2_density_CGS: float, optional
+          The density of para H2, in cm^-3.
+          Default: 0
+      HII_density_CGS: float, optional
+          The density of H+, in cm^-3.
+          Default: 0
+      Electron_density_CGS: float, optional
+          The density of electron in cm^-3.
+          Default: 0
+      donotsolve: bool, optional
+          If True, the code will not solve the problem (but will calculate the critical densities).
+          Default: False
+      collisioPartnerCrit: int, optional
+          Select which collisional partner (when there are more than one in the file) to use for calculqting the critical densities.
+          Default: 1
+      Tbg: float, optional
+          Background temperature.
+          Default: 2.725 (= T_cmb)
+      beam_FWHM_in_arcsec: float, optional
+          Beam full-width-at-half-maximum, in arcsec.
+          Default: 30.0
+      max_code_run_time: float, optional
+          Max code run time for one model run (only for the ODE method).
+          Default: 10.0 seconds
+      max_evol_time: float, optional
+          Max evolution time when solving with the ODE approach
+          Default: 3.15e12 seconds (= 1e5 yr)
+      rtol: float, optional
+          Relative tolerance of the solution
+          Default: 1e-4
+      atol: float, optional
+          Absolute tolerance of the solution
+          Default: 1e-14
+      solve_method: str, optional
+          The method to use for solving the statistical equilibrium problem.
+          Possible values: 'ODE', 'Newton'
+          Default: 'ODE'
+      f_occupation_init_method: str, optional
+          The method to use for initializing the occupation fractions.
+          Possible values: 'Boltzmann', 'Random'
+          Default: 'Boltzmann'
+      '''
 
       smeth = str2cppstr(self.solve_method)
       if solve_method:
@@ -170,7 +290,7 @@ cdef class MyRadexModel:
 
       cc_run_one_params(
         Tkin,
-        dv_CGS,
+        dv_FWHM_CGS or dv_CGS,
         dens_X_CGS,
         Ncol_X_CGS,
         H2_density_CGS,
@@ -199,3 +319,22 @@ cdef class MyRadexModel:
         gtp)
       cc_get_flag(&self.flag_good)
       return
+
+
+  def __make_qnum__(self):
+    res = []
+    for i in range(self.data_transitions.shape[0]):
+      iup = int(self.data_transitions[i,0]) - 1
+      ilow = int(self.data_transitions[i,1]) - 1
+      res.append(self.qnum_s[iup].decode('utf-8') + ' -> ' + self.qnum_s[ilow].decode('utf-8'))
+    return res
+
+
+  def make_dataframe(self):
+    '''
+    Return a `pandas` dataframe from the calculated transition data for viewing.
+    '''
+    import pandas as pd
+    df = pd.DataFrame(data=self.data_transitions, columns=self.column_names)
+    df.insert(len(self.column_names), 'q_num', self.__make_qnum__())
+    return df

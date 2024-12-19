@@ -64,6 +64,8 @@ void c_get_flag(bool *flag);
 
 void c_get_sQum_s(char **sQnum_cptr, int n_levels);
 
+void c_deallocate_sQnum_s(void);
+
 }
 
 
