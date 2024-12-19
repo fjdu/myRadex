@@ -311,11 +311,11 @@ subroutine my_radex_prepare_molecule
   !
   ! Set the initial occupation
   select case (rdxx_cfg%f_occupation_init_method)
-    case ('Boltzmann', 'BOLTZMANN', 'boltzmann')
+    case ('Random', 'RANDOM', 'random')
+      call random_number(a_mol_using%f_occupation)
+    case default
       a_mol_using%f_occupation = a_mol_using%level_list%weight * &
         exp(-a_mol_using%level_list%energy / a_mol_using%Tkin)
-    case default
-      call random_number(a_mol_using%f_occupation)
   end select
   ! Normalize
   a_mol_using%f_occupation = a_mol_using%f_occupation / &
