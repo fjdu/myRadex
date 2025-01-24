@@ -775,6 +775,23 @@ subroutine display_string_both(str, fU)
 end subroutine display_string_both
 
 
+Pure Function to_upper (str) Result (string)
+! From: https://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
+    Implicit None
+    Character(*), Intent(In) :: str
+    Character(LEN(str))      :: string
+    Integer :: ic, i
+    Character(26), Parameter :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    Character(26), Parameter :: low = 'abcdefghijklmnopqrstuvwxyz'
+
+    string = str
+    do i = 1, LEN_TRIM(str)
+        ic = INDEX(low, str(i:i))
+        if (ic > 0) string(i:i) = cap(ic:ic)
+    end do
+End Function to_upper
+
+
 end module trivials
 
 ! Recursive Fortran 95 quicksort routine

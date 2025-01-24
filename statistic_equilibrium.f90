@@ -675,6 +675,7 @@ subroutine calc_beta(tau, geotype, beta, dbeta_dtau)
       ! 1980A&A, 91, 68, De Jong et al.: Hydrostatic models of molecular clouds
       ! Their formula (B-7) is modified according to radex to make it (roughly)
       ! continuous.
+      ! Note that the equations involve log and sqrt, thus cannot handle negative tau.
       if (tt .le. const_small_tau) then
         beta = 1D0
         dbeta_dtau = -LVG_c * 0.5D0

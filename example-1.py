@@ -13,7 +13,7 @@ a.run_one_params(
     dens_X_CGS=1e0, Ncol_X_CGS=2.1e20,
     H2_density_CGS=206913.808111479,
     geotype='lvg',
-    solve_method='ODE', f_occupation_init_method='Boltzmann')
+    solve_method='ODE', f_occupation_init_method='bottom')
 
 print('Cooling rate: ', a.cooling_rate)
 print('Did the solving proceed correctly?', a.flag_good)
@@ -21,3 +21,4 @@ print('Did the solving proceed correctly?', a.flag_good)
 df = a.make_dataframe()
 
 print(df)
+print(df.describe())

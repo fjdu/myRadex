@@ -187,10 +187,10 @@ subroutine do_my_radex(do_init)
     end if
     !
     call my_radex_prepare_molecule
-    select case(rdxx_cfg%solve_method)
-      case ('ODE', 'ode')
+    select case(to_upper(rdxx_cfg%solve_method))
+      case ('ODE')
         call statistic_equil_solve
-      case ('Newton', 'NEWTON')
+      case ('NEWTON')
         call statistic_equil_solve_Newton
       case default
         write(*,*) 'Unknown method: "', trim(rdxx_cfg%solve_method), '". Will use ODE.'
@@ -310,9 +310,26 @@ subroutine my_radex_prepare_molecule
   end if
   !
   ! Set the initial occupation
-  select case (rdxx_cfg%f_occupation_init_method)
-    case ('Random', 'RANDOM', 'random')
+  select case (to_upper(rdxx_cfg%f_occupation_init_method))
+    case ('RANDOM', 'RAND')
       call random_number(a_mol_using%f_occupation)
+    case ('GROUND', 'BOTTOM')
+      a_mol_using%f_occupation = 0D0
+      a_mol_using%f_occupation(1) = 1D0
+    case ('TOP')
+      a_mol_using%f_occupation = 0D0
+      a_mol_using%f_occupation(a_mol_using%n_level) = 1D0
+    case ('BOTTOM-TOP','GROUND-TOP')
+      a_mol_using%f_occupation = 0D0
+      a_mol_using%f_occupation(1) = 1D0
+      a_mol_using%f_occupation(a_mol_using%n_level) = 1D0
+    case ('EQUAL','UNIFORM')
+      a_mol_using%f_occupation = 1D0
+    case ('BOLTZMANN*RAND')
+      call random_number(a_mol_using%f_occupation)
+      a_mol_using%f_occupation = (a_mol_using%f_occupation + 1D2) * &
+        (a_mol_using%level_list%weight * &
+         exp(-a_mol_using%level_list%energy / a_mol_using%Tkin))
     case default
       a_mol_using%f_occupation = a_mol_using%level_list%weight * &
         exp(-a_mol_using%level_list%energy / a_mol_using%Tkin)
