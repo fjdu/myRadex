@@ -128,7 +128,7 @@ subroutine f_run_one_params(&
     dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
     oH2_density_CGS, pH2_densty_CGS, &
-    HII_density_CGS, Electron_density_CGS, &
+    HII_density_CGS, Electron_density_CGS, He_density_CGS, &
     n_levels, n_item, n_transitions, &
     energies, f_occupations, data_transitions, cooling_rate, &
     donotsolve, collisioPartnerCrit, &
@@ -140,7 +140,7 @@ subroutine f_run_one_params(&
   real(kind=c_double), intent(in), value :: Tkin, dv_CGS, dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
     oH2_density_CGS, pH2_densty_CGS, &
-    HII_density_CGS, Electron_density_CGS
+    HII_density_CGS, Electron_density_CGS, He_density_CGS
   integer(kind=c_int), intent(in), value :: n_levels, n_item, n_transitions, len3, len4, len5
   logical(kind=c_bool), intent(in), value :: donotsolve
   integer(kind=c_int), intent(in), value :: collisioPartnerCrit
@@ -159,7 +159,7 @@ subroutine f_run_one_params(&
     dens_X_CGS, Ncol_X_CGS, &
     H2_density_CGS, HI_density_CGS, &
     oH2_density_CGS, pH2_densty_CGS, &
-    HII_density_CGS, Electron_density_CGS, &
+    HII_density_CGS, Electron_density_CGS, He_density_CGS, &
     n_levels, n_item, n_transitions, &
     energies, f_occupations, data_transitions, cooling_rate, &
     logical(donotsolve), collisioPartnerCrit, &

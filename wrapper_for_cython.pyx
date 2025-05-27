@@ -45,6 +45,7 @@ cdef extern from 'pipe_fortran_python.hpp':
     double pH2_densty_CGS,
     double HII_density_CGS,
     double Electron_density_CGS,
+    double He_density_CGS,
     int n_levels,
     int n_item,
     int n_transitions,
@@ -201,7 +202,7 @@ cdef class MyRadexModel:
       dens_X_CGS=1e0, Ncol_X_CGS=None, geotype='slab',
       H2_density_CGS=0e0, HI_density_CGS=0e0,
       oH2_density_CGS=0e0, pH2_densty_CGS=0e0,
-      HII_density_CGS=0e0, Electron_density_CGS=0e0,
+      HII_density_CGS=0e0, Electron_density_CGS=0e0, He_density_CGS=0e0,
       donotsolve=False, collisioPartnerCrit=1,
       Tbg=None, beam_FWHM_in_arcsec=None, max_code_run_time=None, max_evol_time=None,
       rtol=None, atol=None, solve_method=None, f_occupation_init_method=None):
@@ -243,6 +244,9 @@ cdef class MyRadexModel:
           Default: 0
       Electron_density_CGS: float, optional
           The density of electron in cm^-3.
+          Default: 0
+      He_density_CGS: float, optional
+          The density of Helium in cm^-3.
           Default: 0
       donotsolve: bool, optional
           If True, the code will not solve the problem (but will calculate the critical densities).
@@ -299,6 +303,7 @@ cdef class MyRadexModel:
         pH2_densty_CGS,
         HII_density_CGS,
         Electron_density_CGS,
+        He_density_CGS,
         self.n_levels,
         self.n_item,
         self.n_transitions,

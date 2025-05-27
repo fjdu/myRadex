@@ -75,7 +75,7 @@ type :: type_rdxx_cfg
   !
   double precision, dimension(ndim_cfg_vec) :: &
     Tkin, dv, Ncol_x, n_x, &
-    n_H2, n_HI, n_oH2, n_pH2, n_Hplus, n_E, n_He   
+    n_H2, n_HI, n_oH2, n_pH2, n_Hplus, n_E, n_He
   integer :: nTkin=1, ndv=1, nn_x=1, nNcol_x=1, ndens=1 ! Vector sizes
   integer iTkin, idv, in_x, iNcol_x, idens ! Loop indices
   double precision ::  opH2_ratio = 3D0
