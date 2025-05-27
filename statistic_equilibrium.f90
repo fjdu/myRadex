@@ -574,7 +574,8 @@ subroutine statistic_equil_solve_Newton
         
     if ((a_mol_using%f_occupation(i) .ge. 1D2*statistic_equil_params%ATOL) .and. &
         (tscal .le. 1D-4*statistic_equil_params%t_max)) then
-      write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium. i,y,ydot,tscal(s):', i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
+      write(*, '(A, I4, 3ES12.2)') 'Maybe not equilibrium. i,y,ydot,tscal(s):', &
+        i, a_mol_using%f_occupation(i), statistic_equil_params%RWORK(i), tscal
     end if
   end do
 end subroutine statistic_equil_solve_Newton

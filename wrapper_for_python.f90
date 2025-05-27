@@ -12,9 +12,10 @@ character(len=64) :: &
 
 character(len=len_column_names) :: column_names = &
     'iup' //' '// 'ilow' //' '// 'Eup' //' '// 'freq' //' '// 'lam' //' ' &
-    // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// &
-    'fup' //' '// 'flow' //' '// 'flux_Kkms' //' '// 'flux_int' // ' ' // 'flux_Jy' //' '// 'beta' //' ' &
-    // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' //' '// 'Blu' // ' ' // 'n_crit' // ' ' // 'n_crit_old'
+    // 'Tex' //' '// 'tau' //' '// 'Tr' //' '// 'fup' //' '// 'flow' //' ' &
+    // 'flux_Kkms' //' '// 'flux_int' // ' ' // 'flux_Jy' //' '// 'beta' &
+    //' ' // 'Jnu' //' '// 'gup' //' '// 'glow' //' '// 'Aul' //' '// 'Bul' &
+    //' '// 'Blu' // ' ' // 'n_crit' // ' ' // 'n_crit_old'
 
 character(len=len_molecule_name) :: molecule_name = ''
 
