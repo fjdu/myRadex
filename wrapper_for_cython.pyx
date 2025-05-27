@@ -8,6 +8,8 @@ from libcpp.utility cimport pair
 from libcpp cimport bool
 import numpy as np
 import cython
+import multiprocessing as mp
+import uuid
 
 cdef extern from 'pipe_fortran_python.hpp':
   void  cc_config(
@@ -343,3 +345,94 @@ cdef class MyRadexModel:
     df = pd.DataFrame(data=self.data_transitions, columns=self.column_names)
     df.insert(len(self.column_names), 'q_num', self.__make_qnum__())
     return df
+
+
+class SolverProcess:
+    def __init__(self, init_params):
+        self.input_queue = mp.Queue()
+        self.output_queue = mp.Queue()
+        self.process = mp.Process(
+            target=self._worker, 
+            args=(self.input_queue, self.output_queue, init_params)
+        )
+        self.process.start()
+    
+    @staticmethod
+    def _worker(input_queue, output_queue, init_params):
+        solver = MyRadexModel(**init_params)
+
+        while True:
+            task = input_queue.get()
+            if task is None:
+                break
+            
+            print('Running task', task)
+            task_id, data = task
+            try:
+                solver.run_one_params(**data)
+                result = solver.make_dataframe()
+                output_queue.put((task_id, 'success', result))
+            except Exception as e:
+                output_queue.put((task_id, 'error', str(e)))
+    
+    def solve(self, data):
+        task_id = str(uuid.uuid4())
+        self.input_queue.put((task_id, data))
+        
+        while True:
+            result_id, status, result = self.output_queue.get()
+            if result_id == task_id:
+                if status == 'error':
+                    raise RuntimeError(result)
+                return result
+    
+    def cleanup(self):
+        self.input_queue.put(None)
+        self.process.join()
+
+
+class MyRadexManager:
+    '''
+    Example usage:
+    if __name__ == '__main__':
+        manager = myRadex.MyRadexManager()
+        
+        solvers = [
+            manager.create_solver('12CO', dir_transition_rates='./', filename_molecule='12C16O_H2.dat'),
+            manager.create_solver('CI', dir_transition_rates='./', filename_molecule='catom.dat')
+        ]
+        
+        p1 = dict(Tkin=1e2, dv_FWHM_CGS=3e5, dens_X_CGS=1e0, Ncol_X_CGS=1e16, H2_density_CGS=1e4, geotype='lvg')
+        p2 = dict(Tkin=1e3, dv_FWHM_CGS=3e5, dens_X_CGS=1e0, Ncol_X_CGS=1e16, H2_density_CGS=1e5, geotype='lvg')
+        
+        result1 = manager.solve('12CO', p1)
+        result2 = manager.solve('CI', p1) 
+        
+        manager.cleanup()
+    
+        print(result1.describe())
+        print(result2.describe())
+    '''
+
+    def __init__(self):
+        self.solvers = {}
+    
+    def create_solver(self, solver_id, **init_params):
+        if solver_id in self.solvers:
+            raise ValueError(f"Solver {solver_id} already exists")
+        
+        self.solvers[solver_id] = SolverProcess(init_params)
+        return solver_id
+    
+    def solve(self, solver_id, data):
+        """Solve using a specific solver instance"""
+        if solver_id not in self.solvers:
+            raise ValueError(f"Solver {solver_id} not found")
+        
+        return self.solvers[solver_id].solve(data)
+    
+    def cleanup(self):
+        for solver in self.solvers.values():
+            solver.cleanup()
+        self.solvers.clear()
+
