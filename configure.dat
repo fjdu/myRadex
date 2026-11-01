@@ -41,7 +41,7 @@
   rdxx_cfg%filename_save        = 'output.dat'
   !
   ! Output frequency range
-  rdxx_cfg%freqmin              = 5.5D11 ! Hz
+  rdxx_cfg%freqmin              = 1D11 ! Hz
   rdxx_cfg%freqmax              = 5.6D11 ! Hz
   !
   ! The following accept vector format inputs which will be looped over automatically.

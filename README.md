@@ -39,6 +39,12 @@
 - `n_crit_old`: critical density based on the two-level simplification
 - `q`: quality of the computation
 
+When comparing the "fluxes" to the observed spectra of a specific source, one could:
+(1) re-scale the spectrally integrated (when the data is not resolved spectrally) `flux_int` from $4\pi$ steradian to the actual solid angle subtended by the source (note that its unit is $\text{erg}\cdot\text{cm}^{-2}\cdot\text{s}^{-1}$), or
+(2) re-scale `flux_Jy` (spectrally resolved, integrated over a beam solid angle) from a nominal beam solid angle to the actual beam solid angle.
+If the spectral resolution is much coarser than the intrinsic linewidth, then the spectra are spectrally diluted, and one should divide the spectrally integrated flux by the actual spectral channel width.
+
+
 ---
 
 ## Calculation of critical density
