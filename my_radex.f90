@@ -98,10 +98,10 @@ subroutine do_my_radex(do_init)
   integer i, itot, ntot, ilowSav, iupSav
   integer iTkin, idv, in_x, iNcol_x, idens
   double precision fup, flow, gup, glow, Tex, Tr, flux_CGS, flux_K_km_s, flux_Jy
-  double precision Inu_t, tau, t1, t2
+  double precision Inu_t, tau, t1, t2, maxtau
   double precision beam_area
   double precision critical_density, critical_density_old
-  integer flag_good
+  integer flag_good, imaxtau
   character(len=9) beam_FWHM_str
   !
   if (present(do_init)) then
@@ -110,10 +110,11 @@ subroutine do_my_radex(do_init)
     do_ini = .true.
   end if
   !
-  write(*, '(A)') 'Code running...'
+  write(*, '(A)') 'Code starting...'
   if (.not. rdxx_cfg%verbose) then
     write(*, '(A)') 'Runtime message disabled.'
   end if
+  write(*,'(2A)') 'Using method ', rdxx_cfg%solve_method
   !
   if (do_ini) then
     ! Load the molecular data, etc.
@@ -192,6 +193,9 @@ subroutine do_my_radex(do_init)
         call statistic_equil_solve
       case ('NEWTON')
         call statistic_equil_solve_Newton
+      case ('ODE+NEWTON')
+        call statistic_equil_solve
+        call statistic_equil_solve_Newton
       case default
         write(*,*) 'Unknown method: "', trim(rdxx_cfg%solve_method), '". Will use ODE.'
         call statistic_equil_solve
@@ -203,6 +207,8 @@ subroutine do_my_radex(do_init)
       flag_good = 0
     end if
     !
+    imaxtau = 1
+    maxtau = 0D0
     do i=1, a_mol_using%rad_data%n_transition
       associate(r => a_mol_using%rad_data%list(i))
         if ((r%freq .lt. rdxx_cfg%freqmin) .or. &
@@ -217,6 +223,12 @@ subroutine do_my_radex(do_init)
         Tex = -(r%Eup - r%Elow) / log(fup*glow / (flow*gup))
         !
         tau = r%tau
+        !
+        if (tau .gt. maxtau) then
+          maxtau = tau
+          imaxtau = i
+        end if
+        !
         t1 = exp(-tau)
         if (abs(tau) .lt. 1D-6) then
           t2 = tau
@@ -255,6 +267,8 @@ subroutine do_my_radex(do_init)
       end associate
     end do
     flush(rdxx_cfg%fU)
+    write(*, '("Transition", I5, " has max tau = ", ES12.3, " (iup,ilow)=", I5,I5)') imaxtau, maxtau, &
+      a_mol_using%rad_data%list(imaxtau)%iup, a_mol_using%rad_data%list(imaxtau)%ilow
   end do
   end do
   end do
