@@ -195,7 +195,11 @@ subroutine do_my_radex(do_init)
         call statistic_equil_solve_Newton
       case ('ODE+NEWTON')
         call statistic_equil_solve
-        call statistic_equil_solve_Newton
+        if (.not. statistic_equil_params%is_good) then
+            call statistic_equil_solve_Newton
+        else
+            write(*,'(A)') 'ODE is good and will not run NEWTON.'
+        end if
       case default
         write(*,*) 'Unknown method: "', trim(rdxx_cfg%solve_method), '". Will use ODE.'
         call statistic_equil_solve
